@@ -13,7 +13,12 @@
         .correct { background-color: #28a745 !important; color: white !important; }
         .incorrect { background-color: #dc3545 !important; color: white !important; }
         .rationale { font-size: 0.8rem; color: #6c757d; margin-top: 4px; }
-        button:disabled { opacity: 0.7; cursor: not-allowed; }
+        button:disabled { 
+            opacity: 0.6; 
+            cursor: default;
+            transform: none !important; 
+            box-shadow: none !important; 
+        }
         #name-input:focus, #text-answer-input:focus { 
             outline: none; 
             box-shadow: 0 0 0 2px #3b82f6; 
@@ -23,7 +28,7 @@
         .quiz-button {
             transition: all 0.2s ease-in-out;
         }
-        .quiz-button:hover {
+        .quiz-button:not(:disabled):hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
@@ -41,24 +46,23 @@
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
             <button id="start-easy-quiz" class="quiz-button w-full px-4 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 font-semibold">
                 <span class="block text-xl">Let</span>
-                <span class="block text-xs">Navn, Nr, Position</span>
+                <span class="block text-xs">Start her for at låse op</span>
             </button>
-            <button id="start-normal-quiz" class="quiz-button w-full px-4 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-semibold">
-                <span class="block text-xl">Normal</span>
-                <span class="block text-xs">+ Nationalitet & Stab</span>
+            <button id="start-normal-quiz" class="quiz-button w-full px-4 py-3 bg-blue-600 text-white rounded-md" disabled>
+                <span class="block text-xl">Normal 🔒</span>
+                <span class="block text-xs">Klar 'Let' for at låse op</span>
             </button>
-            <button id="start-hard-quiz" class="quiz-button w-full px-4 py-3 bg-red-600 text-white rounded-md hover:bg-red-700 font-semibold">
-                <span class="block text-xl">Ekspert</span>
-                <span class="block text-xs">+ Fødselsår & Frit Svar</span>
+            <button id="start-hard-quiz" class="quiz-button w-full px-4 py-3 bg-red-600 text-white rounded-md" disabled>
+                <span class="block text-xl">Ekspert 🔒</span>
+                <span class="block text-xs">Klar 'Normal' for at låse op</span>
             </button>
         </div>
-        <p class="text-xs text-gray-500 mt-3">Bruger de "ubrugte" personer i puljen, indtil den er tom.</p>
+        <p class="text-xs text-gray-500 mt-3">Du skal klare et niveau med 100% rigtige for at låse op for det næste.</p>
     </div>
 
 
     <div id="quiz-container" class="bg-white p-6 md:p-8 rounded-lg shadow-xl w-full max-w-xl text-center hidden">
         <h1 id="quiz-title" class="text-2xl md:text-3xl font-bold mb-6 text-blue-900">FCK Quiz</h1>
-        
         <div id="question-area" class="mb-6">
             <p id="question-number" class="text-sm text-gray-500 mb-2"></p>
             <p id="question-text" class="text-lg font-semibold mb-4"></p>
@@ -67,30 +71,32 @@
                 <input type="text" id="text-answer-input" placeholder="Indtast dit svar..." class="w-full px-4 py-2 border border-gray-300 rounded-md mb-3">
                 <button id="submit-text-answer" class="w-full px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">Svar</button>
             </div>
-        </div>
-
-        <div id="feedback-area" class="mt-4 hidden">
-            <p id="feedback-question-text" class="text-sm italic text-gray-600 mb-2"></p>
-            <p id="feedback-text" class="font-semibold mb-2"></p>
-            <p id="rationale-text" class="text-sm text-gray-700"></p>
-            <button id="next-button" class="mt-4 px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">Næste Spørgsmål</button>
+            <div id="inline-feedback-area" class="mt-4 hidden border-t pt-4">
+                <p id="feedback-question-text" class="text-sm italic text-gray-600 mb-2"></p>
+                <p id="feedback-text" class="font-semibold mb-2"></p>
+                <p id="rationale-text" class="text-sm text-gray-700"></p>
+                <button id="inline-next-button" class="mt-4 px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition hidden">Næste Spørgsmål</button>
+            </div>
         </div>
         <div id="results-area" class="hidden text-center">
             <h2 class="text-xl font-bold mb-4">Resultat for <span id="player-name" class="text-blue-700"></span></h2>
             <p id="score" class="text-lg mb-4"></p>
             <p id="final-message" class="mb-6"></p>
+            <button id="continue-to-next-level-button" class="quiz-button w-full px-6 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 font-semibold mt-4 hidden">
+                Fortsæt til Næste Niveau
+            </button>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-6">
                 <button id="restart-same-quiz-button" class="quiz-button px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">Tag Samme Quiz Igen</button>
-                <button id="restart-new-quiz-button" class="quiz-button px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition">Ny Quiz (Resterende Pulje)</button>
+                <button id="restart-new-quiz-button" class="quiz-button w-full md:w-auto px-6 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition">Ny Quiz (Resterende Pulje)</button>
             </div>
             <button id="email-button" class="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition mt-4 w-full">Send Resultat via E-mail</button>
-            <button id="back-to-start-button" class="px-6 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition mt-2 w-full">Tilbage til Start (Nyt Navn)</button>
+            <button id="back-to-start-button" class="px-6 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition mt-2 w-full">Tilbage til Start</button>
         </div>
     </div>
 
     <script>
-        // === DATABASER ===
-        // ... (spillerDatabase og stabDatabase er uændrede) ...
+        // === DATABASER (Med Andrew Clark) ===
+        // ... (uændret) ...
         const spillerDatabase = [
           { "nummer": 1, "navn": "Dominik Kotarski", "position": "Målmand", "nationalitet": "Kroatien", "fødselsdato": "2000-02-10", "type": "Spiller" },
           { "nummer": 31, "navn": "Rúnar Alex Rúnarsson", "position": "Målmand", "nationalitet": "Island", "fødselsdato": "1995-02-18", "type": "Spiller" },
@@ -126,7 +132,7 @@
           { "navn": "Stefan Madsen", "position": "Assistenttræner", "nationalitet": "Danmark", "fødselsdato": null, "type": "Stab" },
           { "navn": "Sergio Almenara", "position": "Assistenttræner", "nationalitet": "Spanien", "fødselsdato": "1980-04-07", "type": "Stab" },
           { "navn": "Kim Christensen", "position": "Målmandstræner", "nationalitet": "Danmark", "fødselsdato": "1979-07-16", "type": "Stab" },
-          { "navn": "Ben Rosen", "position": "Fysisk træner", "nationalitet": "England", "fødselsdato": null, "type": "Stab" }
+          { "navn": "Andrew Clark", "position": "Fysisk træner", "nationalitet": "Australien", "fødselsdato": null, "type": "Stab" }
         ];
         const personDatabase = [...spillerDatabase, ...stabDatabase];
         // === SLUT PÅ DATABASER ===
@@ -141,8 +147,10 @@
         let quizData = { questions: [] }; 
         let sessionUsedPersons = [];
         let currentDifficulty = 'normal';
+        let quizInProgress = false;
 
         // === DOM ELEMENTER ===
+        // ... (uændrede) ...
         const startScreen = document.getElementById('start-screen');
         const quizContainer = document.getElementById('quiz-container');
         const nameInput = document.getElementById('name-input');
@@ -151,14 +159,15 @@
         const startHardButton = document.getElementById('start-hard-quiz');
         const quizTitleEl = document.getElementById('quiz-title');
         const questionArea = document.getElementById('question-area');
-        const feedbackArea = document.getElementById('feedback-area');
         const resultsArea = document.getElementById('results-area');
         const questionNumberEl = document.getElementById('question-number');
         const questionTextEl = document.getElementById('question-text');
         const answerOptionsEl = document.getElementById('answer-options');
+        const inlineFeedbackArea = document.getElementById('inline-feedback-area');
         const feedbackTextEl = document.getElementById('feedback-text');
         const rationaleTextEl = document.getElementById('rationale-text');
-        const nextButton = document.getElementById('next-button');
+        const feedbackQuestionTextEl = document.getElementById('feedback-question-text');
+        const inlineNextButton = document.getElementById('inline-next-button');
         const scoreEl = document.getElementById('score');
         const finalMessageEl = document.getElementById('final-message');
         const playerNameEl = document.getElementById('player-name');
@@ -169,10 +178,7 @@
         const textInputArea = document.getElementById('text-input-area');
         const textAnswerInput = document.getElementById('text-answer-input');
         const submitTextAnswer = document.getElementById('submit-text-answer');
-        
-        // === START PÅ ÆNDRING 2: NYT DOM ELEMENT ===
-        const feedbackQuestionTextEl = document.getElementById('feedback-question-text');
-        // === SLUT PÅ ÆNDRING 2 ===
+        const continueToNextLevelButton = document.getElementById('continue-to-next-level-button');
 
 
         // === HJÆLPEFUNKTIONER ===
@@ -198,8 +204,8 @@
             return Array.from(wrongOptions);
         }
 
-        // === QUIZ GENERATOR ===
-        // ... (uændret - hele 'generateRandomQuiz' er den samme) ...
+        // === QUIZ GENERATOR (Med "Easy" frys-rettelse) ===
+        // ... (uændret) ...
         const questionTypes = { SPILLER_NR_TIL_NAVN: 0, SPILLER_NAVN_TIL_NR: 1, PERSON_NAVN_TIL_POS: 2, PERSON_NAVN_TIL_NAT: 3, PERSON_NAVN_TIL_AAR: 4, STAB_POS_TIL_NAVN: 5, TÆL_NATIONALITET: 6 };
         const difficultySettings = {
             easy: [ questionTypes.SPILLER_NR_TIL_NAVN, questionTypes.SPILLER_NAVN_TIL_NR, questionTypes.PERSON_NAVN_TIL_POS ],
@@ -211,23 +217,44 @@
             quizTitleEl.textContent = `FCK Quiz (${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)})`;
             let availablePlayers = spillerDatabase.filter(p => !sessionUsedPersons.some(used => used.navn === p.navn));
             let availableStab = stabDatabase.filter(s => !sessionUsedPersons.some(used => used.navn === s.navn));
-            if (availablePlayers.length < 5 && availableStab.length === 0) {
-                alert("Alle personer fra truppen er blevet brugt! Vi starter forfra med en frisk pulje.");
+            let totalAvailable;
+            if (difficulty === 'easy') {
+                totalAvailable = availablePlayers.length;
+            } else {
+                totalAvailable = availablePlayers.length + availableStab.length;
+            }
+            if (totalAvailable < 4) {
+                alert("Alle personer fra denne sværhedsgrads pulje er blevet brugt! Vi starter forfra.");
                 sessionUsedPersons = [];
                 availablePlayers = [...spillerDatabase];
                 availableStab = [...stabDatabase];
+                if (difficulty === 'easy') {
+                    totalAvailable = availablePlayers.length;
+                } else {
+                    totalAvailable = availablePlayers.length + availableStab.length;
+                }
             }
+            const numQuestions = Math.min(10, totalAvailable);
             let newQuestions = [];
             let quizPersons = [];
             let questionTypeCounts = {};
-            const numQuestions = 10;
             while (newQuestions.length < numQuestions) {
                 let questionData = null;
                 let questionType = allowedTypes[Math.floor(Math.random() * allowedTypes.length)];
-                const isTextInput = (difficulty === 'hard' && (questionType === questionTypes.SPILLER_NR_TIL_NAVN || questionType === questionTypes.SPILLER_NAVN_TIL_NR));
-                if ((questionType === questionTypes.SPILLER_NAVN_TIL_NR || questionType === questionTypes.SPILLER_NR_TIL_NAVN) && availablePlayers.length === 0) { questionType = questionTypes.PERSON_NAVN_TIL_POS; }
-                if (questionType === questionTypes.STAB_POS_TIL_NAVN && availableStab.length === 0) { questionType = questionTypes.PERSON_NAVN_TIL_POS; }
-                if (questionType === questionTypes.TÆL_NATIONALITET && (questionTypeCounts[questionType] || 0) > 0) { questionType = questionTypes.PERSON_NAVN_TIL_NAT; }
+                const isTextInput = (difficulty === 'hard' && 
+                                    (questionType === questionTypes.SPILLER_NR_TIL_NAVN || 
+                                     questionType === questionTypes.SPILLER_NAVN_TIL_NR ||
+                                     questionType === questionTypes.PERSON_NAVN_TIL_AAR ||
+                                     questionType === questionTypes.TÆL_NATIONALITET));
+                if ((questionType === questionTypes.SPILLER_NAVN_TIL_NR || questionType === questionTypes.SPILLER_NR_TIL_NAVN) && availablePlayers.length === 0) { 
+                    questionType = questionTypes.PERSON_NAVN_TIL_POS; 
+                }
+                if (difficulty !== 'easy' && questionType === questionTypes.STAB_POS_TIL_NAVN && availableStab.length === 0) { 
+                    questionType = questionTypes.PERSON_NAVN_TIL_POS; 
+                }
+                if (difficulty === 'hard' && questionType === questionTypes.TÆL_NATIONALITET && (questionTypeCounts[questionType] || 0) > 0) { 
+                    questionType = questionTypes.PERSON_NAVN_TIL_NAT; 
+                }
                 let correctPerson = null;
                 switch(questionType) {
                     case questionTypes.SPILLER_NR_TIL_NAVN: {
@@ -251,9 +278,14 @@
                         break;
                     }
                     case questionTypes.PERSON_NAVN_TIL_POS: {
-                        let pool = (difficulty === 'easy') ? availablePlayers : [...availablePlayers, ...availableStab];
+                        let pool;
+                        if (difficulty === 'easy') {
+                            pool = availablePlayers;
+                        } else {
+                            pool = [...availablePlayers, ...availableStab];
+                        }
                         correctPerson = shuffleArray(pool).find(p => !quizPersons.includes(p.navn));
-                        if (!correctPerson) continue;
+                        if (!correctPerson) continue; 
                         const allPositions = [...new Set(personDatabase.map(p => p.position))];
                         const wrongOptions = getUniqueWrongOptions(allPositions, correctPerson.position, 3);
                         questionData = { question: `Hvilken position/stilling har ${correctPerson.navn}?`, correct: correctPerson.position, rationale: `${correctPerson.navn} er korrekt ${correctPerson.position}.`, wrong: wrongOptions.map(pos => ({ text: pos, rationale: `${correctPerson.navn} er ${correctPerson.position}, ikke ${pos}.` })) };
@@ -273,17 +305,33 @@
                         correctPerson = shuffleArray(pool).find(p => !quizPersons.includes(p.navn));
                         if (!correctPerson) continue;
                         const year = correctPerson.fødselsdato.substring(0, 4);
-                        const allYears = [...new Set(personDatabase.filter(p => p.fødselsdato).map(p => p.fødselsdato.substring(0, 4)))];
-                        const wrongOptions = getUniqueWrongOptions(allYears, year, 3);
-                        questionData = { question: `Hvilket år er ${correctPerson.navn} født?`, correct: year, rationale: `${correctPerson.navn} er korrekt født i ${year}.`, wrong: wrongOptions.map(y => ({ text: y, rationale: `${correctPerson.navn} er født i ${year}.` })) };
+                        questionData = { question: `Hvilket år er ${correctPerson.navn} født?`, correct: year, rationale: `${correctPerson.navn} er korrekt født i ${year}.` };
+                        if (!isTextInput) {
+                            const allYears = [...new Set(personDatabase.filter(p => p.fødselsdato).map(p => p.fødselsdato.substring(0, 4)))];
+                            questionData.wrong = getUniqueWrongOptions(allYears, year, 3).map(y => ({ text: y, rationale: `${correctPerson.navn} er født i ${year}.` }));
+                        }
                         break;
                     }
                     case questionTypes.STAB_POS_TIL_NAVN: {
                         correctPerson = shuffleArray(availableStab).find(p => !quizPersons.includes(p.navn));
                         if (!correctPerson) continue;
-                        const wrongStab = stabDatabase.filter(s => s.navn !== correctPerson.navn);
-                        const wrongOptions = getUniqueWrongOptions(wrongStab.map(s => s.navn), correctPerson.navn, 3);
-                        questionData = { question: `Hvem har stillingen: ${correctPerson.position}?`, correct: correctPerson.navn, rationale: `${correctPerson.position} er korrekt ${correctPerson.navn}.`, wrong: wrongOptions.map(navn => ({ text: navn, rationale: `${navn} er ${stabDatabase.find(s=>s.navn === navn).position}.` })) };
+                        const position = correctPerson.position;
+                        const peopleWithThisPosition = stabDatabase.filter(s => s.position === position).length;
+                        const isUniquePosition = (peopleWithThisPosition === 1);
+                        let questionText = "";
+                        if (isUniquePosition) {
+                            questionText = `Hvem har stillingen: ${position}?`;
+                        } else {
+                            questionText = `Hvilken af følgende personer er ${position}?`;
+                        }
+                        const wrongPeople = personDatabase.filter(p => p.position !== position && p.navn !== correctPerson.navn);
+                        const wrongOptions = getUniqueWrongOptions(wrongPeople.map(p => p.navn), correctPerson.navn, 3);
+                        questionData = {
+                            question: questionText,
+                            correct: correctPerson.navn,
+                            rationale: `${correctPerson.navn} er korrekt ${position}.`,
+                            wrong: wrongOptions.map(navn => ({ text: navn, rationale: `${navn} er ${personDatabase.find(s=>s.navn === navn).position}.` }))
+                        };
                         break;
                     }
                     case questionTypes.TÆL_NATIONALITET: {
@@ -293,9 +341,12 @@
                         if (popularNats.length === 0) continue;
                         const natToCount = shuffleArray(popularNats)[0];
                         const correctCount = natCounts[natToCount];
-                        let wrongCounts = new Set([correctCount + 1, Math.max(1, correctCount - 1), correctCount + 2]);
-                        while(wrongCounts.size < 3 || wrongCounts.has(correctCount)) { wrongCounts.add(Math.max(1, correctCount + Math.floor(Math.random() * 3) - 1)); wrongCounts.delete(correctCount); }
-                        questionData = { question: `Hvor mange spillere fra ${natToCount} er der i A-truppen?`, correct: correctCount.toString(), rationale: `Der er korrekt ${correctCount} spillere fra ${natToCount} (f.eks. ${spillerDatabase.filter(p=>p.nationalitet === natToCount).map(p=>p.navn).join(', ')}).`, wrong: Array.from(wrongCounts).slice(0,3).map(c => ({ text: c.toString(), rationale: `Det korrekte antal er ${correctCount}.` })) };
+                        questionData = { question: `Hvor mange spillere fra ${natToCount} er der i A-truppen?`, correct: correctCount.toString(), rationale: `Der er korrekt ${correctCount} spillere fra ${natToCount} (f.eks. ${spillerDatabase.filter(p=>p.nationalitet === natToCount).map(p=>p.navn).join(', ')}).`};
+                        if (!isTextInput) {
+                            let wrongCounts = new Set([correctCount + 1, Math.max(1, correctCount - 1), correctCount + 2]);
+                            while(wrongCounts.size < 3 || wrongCounts.has(correctCount)) { wrongCounts.add(Math.max(1, correctCount + Math.floor(Math.random() * 3) - 1)); wrongCounts.delete(correctCount); }
+                            questionData.wrong = Array.from(wrongCounts).slice(0,3).map(c => ({ text: c.toString(), rationale: `Det korrekte antal er ${correctCount}.` }));
+                        }
                         break;
                     }
                 }
@@ -317,7 +368,7 @@
                         availableStab = availableStab.filter(s => s.navn !== correctPerson.navn);
                     }
                 }
-            }
+            } // Slut på while-løkke
             quizData = { questions: newQuestions };
             startQuizLogic();
         }
@@ -329,12 +380,16 @@
             if (!playerName) return;
             startScreen.classList.add('hidden');
             quizContainer.classList.remove('hidden');
+            resultsArea.classList.add('hidden');
+            questionArea.classList.remove('hidden');
             currentQuestionIndex = 0;
             score = 0;
             questions = [...quizData.questions]; 
-            resultsArea.classList.add('hidden');
-            feedbackArea.classList.add('hidden');
-            questionArea.classList.remove('hidden');
+            if (questions.length === 0) {
+                console.error("Fejl: Forsøgte at starte en quiz med 0 spørgsmål.");
+                goBackToStart();
+                return;
+            }
             loadQuestion();
         }
         function initializeQuiz(difficulty) {
@@ -349,9 +404,25 @@
         function restartSameQuiz() {
             startQuizLogic(); 
         }
+        function loadNextOrShowResults() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < questions.length) {
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        }
         function loadQuestion() {
-            feedbackArea.classList.add('hidden');
-            questionArea.classList.remove('hidden');
+            quizInProgress = false;
+            inlineFeedbackArea.classList.add('hidden');
+            inlineNextButton.classList.add('hidden'); 
+            questionArea.classList.remove('hidden'); 
+            resultsArea.classList.add('hidden');
+            if (!questions[currentQuestionIndex]) {
+                console.error("Fejl: Kunne ikke indlæse spørgsmål. Går til resultater.");
+                showResults();
+                return;
+            }
             const currentQuestion = questions[currentQuestionIndex];
             questionNumberEl.textContent = `Spørgsmål ${currentQuestionIndex + 1} af ${questions.length}`;
             questionTextEl.innerHTML = currentQuestion.question; 
@@ -360,6 +431,8 @@
                 answerOptionsEl.classList.add('hidden');
                 textInputArea.classList.remove('hidden');
                 textAnswerInput.value = '';
+                textAnswerInput.disabled = false;
+                submitTextAnswer.disabled = false;
                 textAnswerInput.focus();
             } else {
                 textInputArea.classList.add('hidden');
@@ -377,9 +450,9 @@
                 });
             }
         }
-
-        // === START PÅ ÆNDRING 3: OPDATERET handleAnswer ===
         function handleAnswer(event) {
+            if (quizInProgress) return;
+            quizInProgress = true;
             const selectedButton = event.target.closest('button');
             const isCorrect = selectedButton.dataset.correct === 'true';
             const rationale = selectedButton.dataset.rationale;
@@ -392,98 +465,124 @@
                     button.classList.add('incorrect');
                 }
             });
-
             if (isCorrect) {
                 score++;
-                feedbackTextEl.textContent = 'Korrekt!';
+                feedbackTextEl.innerHTML = 'Korrekt! ✔️';
                 feedbackTextEl.style.color = '#28a745';
+                const delay = 3000;
+                setTimeout(loadNextOrShowResults, delay);
             } else {
                 feedbackTextEl.textContent = 'Forkert!';
                 feedbackTextEl.style.color = '#dc3545';
+                inlineNextButton.classList.remove('hidden');
             }
-
-            // TILFØJET LINJE:
             feedbackQuestionTextEl.innerHTML = questions[currentQuestionIndex].question;
             rationaleTextEl.innerHTML = rationale; 
-            questionArea.classList.add('hidden');
-            feedbackArea.classList.remove('hidden');
-
-            if (currentQuestionIndex === questions.length - 1) {
-                nextButton.textContent = 'Se Resultat';
-            } else {
-                nextButton.textContent = 'Næste Spørgsmål';
-            }
+            inlineFeedbackArea.classList.remove('hidden');
         }
-        // === SLUT PÅ ÆNDRING 3 ===
-
-
-        // === START PÅ ÆNDRING 4: OPDATERET handleTextInputAnswer ===
         function handleTextInputAnswer() {
+            if (quizInProgress) return;
+            quizInProgress = true;
+            textAnswerInput.disabled = true;
+            submitTextAnswer.disabled = true;
             const currentQuestion = questions[currentQuestionIndex];
-            const givenAnswer = textAnswerInput.value.trim().toLowerCase();
-            const correctAnswer = currentQuestion.correctAnswer.toLowerCase();
-            let isCorrect = (givenAnswer === correctAnswer);
-            if (!isCorrect && currentQuestion.questionType === questionTypes.SPILLER_NR_TIL_NAVN) {
-                const nameParts = correctAnswer.split(' ');
-                const lastName = nameParts[nameParts.length - 1].toLowerCase();
-                if (givenAnswer === lastName) {
-                    isCorrect = true;
-                }
-            }
-
+            const givenAnswer = textAnswerInput.value.trim();
+            const correctAnswer = currentQuestion.correctAnswer;
+            let isCorrect = (givenAnswer.toLowerCase() === correctAnswer.toLowerCase());
             let rationale;
             if (isCorrect) {
                 score++;
-                feedbackTextEl.textContent = 'Korrekt!';
+                feedbackTextEl.innerHTML = 'Korrekt! ✔️';
                 feedbackTextEl.style.color = '#28a745';
                 rationale = currentQuestion.rationale;
+                const delay = 3000;
+                setTimeout(loadNextOrShowResults, delay);
             } else {
                 feedbackTextEl.textContent = 'Forkert!';
                 feedbackTextEl.style.color = '#dc3545';
                 rationale = `Det korrekte svar er <strong>${currentQuestion.correctAnswer}</strong>. ${currentQuestion.rationale}`;
+                inlineNextButton.classList.remove('hidden');
             }
-
-            // TILFØJET LINJE:
             feedbackQuestionTextEl.innerHTML = currentQuestion.question;
             rationaleTextEl.innerHTML = rationale; 
-            questionArea.classList.add('hidden');
-            feedbackArea.classList.remove('hidden');
-
-            if (currentQuestionIndex === questions.length - 1) {
-                nextButton.textContent = 'Se Resultat';
-            } else {
-                nextButton.textContent = 'Næste Spørgsmål';
-            }
+            inlineFeedbackArea.classList.remove('hidden');
         }
-        // === SLUT PÅ ÆNDRING 4 ===
 
+        // === START PÅ ÆNDRING 2: OPDATERET showResults (Rettelse af frys/lås) ===
         function showResults() {
-            // ... (uændret) ...
-            feedbackArea.classList.add('hidden');
+            quizInProgress = false; // Lås knapperne op!
+            // feedbackArea.classList.add('hidden'); // <-- DENNE LINJE VAR FEJLEN (er nu fjernet)
+            questionArea.classList.add('hidden'); 
             resultsArea.classList.remove('hidden');
             playerNameEl.textContent = playerName;
-            scoreEl.textContent = `Du fik ${score} ud af ${questions.length} rigtige!`;
+            
+            continueToNextLevelButton.classList.add('hidden');
             if (questions.length === 0) {
-                 restartSameQuizButton.classList.add('hidden');
-            } else if (score === questions.length) {
+                scoreEl.textContent = "Der opstod en fejl (0 spørgsmål).";
                 restartSameQuizButton.classList.add('hidden');
             } else {
-                restartSameQuizButton.classList.remove('hidden');
+                scoreEl.textContent = `Du fik ${score} ud af ${questions.length} rigtige!`;
+                if (score === questions.length) {
+                    restartSameQuizButton.classList.add('hidden');
+                } else {
+                    restartSameQuizButton.classList.remove('hidden');
+                }
             }
+            
             let message = '';
             const percentage = questions.length > 0 ? (score / questions.length) * 100 : 0;
+            
+            // NY MOTIVERENDE BESKED-LOGIK
              if (percentage === 100) {
                  message = 'Perfekt score! Du er en ægte FCK-kender!';
+             
              } else if (percentage >= 70) {
-                 message = 'Flot resultat! Du har godt styr på tingene.';
+                const mangler = questions.length - score;
+                const plural = mangler === 1 ? "rigtigt svar" : "rigtige svar";
+                
+                if (currentDifficulty === 'easy' || currentDifficulty === 'normal') {
+                    message = `Flot! Du mangler kun ${mangler} ${plural} for at låse op for næste niveau.`;
+                } else {
+                    // Hvis 'Ekspert' (intet at låse op)
+                    message = 'Flot resultat! Du har godt styr på tingene.';
+                }
+             
              } else if (percentage >= 40) {
                  message = 'Godt forsøgt! Lidt mere træning, så sidder den der.';
              } else {
                  message = 'Øv! Det kræver vist lidt mere øvelse.';
              }
-            finalMessageEl.textContent = message;
+            
+            // OPLÅSNINGS-LOGIK
+            if (percentage === 100 && questions.length > 0) {
+                if (currentDifficulty === 'easy') {
+                    if (startNormalButton.disabled) { 
+                        startNormalButton.disabled = false;
+                        startNormalButton.classList.remove('opacity-60', 'cursor-not-allowed');
+                        startNormalButton.querySelector('.text-xl').innerHTML = "Normal ✔️";
+                        startEasyButton.querySelector('.text-xs').innerHTML = "Klaret!";
+                        message += " <strong>Flot! Du har låst op for 'Normal'.</strong>";
+                    }
+                    continueToNextLevelButton.innerHTML = "Start Normal Quiz";
+                    continueToNextLevelButton.dataset.nextLevel = "normal";
+                    continueToNextLevelButton.classList.remove('hidden');
+                } else if (currentDifficulty === 'normal') {
+                    if (startHardButton.disabled) { 
+                        startHardButton.disabled = false;
+                        startHardButton.classList.remove('opacity-60', 'cursor-not-allowed');
+                        startHardButton.querySelector('.text-xl').innerHTML = "Ekspert ✔️";
+                        startNormalButton.querySelector('.text-xs').innerHTML = "Klaret!";
+                        message += " <strong>Perfekt! Du har låst op for 'Ekspert'.</strong>";
+                    }
+                    continueToNextLevelButton.innerHTML = "Start Ekspert Quiz";
+                    continueToNextLevelButton.dataset.nextLevel = "hard";
+                    continueToNextLevelButton.classList.remove('hidden');
+                }
+            }
+            finalMessageEl.innerHTML = message;
             emailButton.onclick = sendEmail;
         }
+        // === SLUT PÅ ÆNDRING 2 ===
 
         function sendEmail() {
             // ... (uændret) ...
@@ -499,38 +598,36 @@
         function goBackToStart() {
              quizContainer.classList.add('hidden');
              startScreen.classList.remove('hidden');
-             playerName = ''; 
-             nameInput.value = '';
+             nameInput.value = playerName; 
              sessionUsedPersons = [];
         }
 
         // === EVENT LISTENERS ===
         // ... (uændrede) ...
         function startQuizFromMenu(difficulty) {
-            playerName = nameInput.value.trim();
+            playerName = nameInput.value.trim(); 
             if (!playerName) {
                 alert("Indtast venligst dit navn for at starte.");
                 return;
             }
             currentDifficulty = difficulty;
-            sessionUsedPersons = [];
+            sessionUsedPersons = []; 
             generateRandomQuiz(difficulty);
         }
         startEasyButton.addEventListener('click', () => startQuizFromMenu('easy'));
         startNormalButton.addEventListener('click', () => startQuizFromMenu('normal'));
         startHardButton.addEventListener('click', () => startQuizFromMenu('hard'));
-        nextButton.addEventListener('click', () => {
-            currentQuestionIndex++;
-            if (currentQuestionIndex < questions.length) {
-                loadQuestion();
-            } else {
-                showResults();
-            }
-        });
+        inlineNextButton.addEventListener('click', loadNextOrShowResults);
         backToStartButton.addEventListener('click', goBackToStart);
         restartSameQuizButton.addEventListener('click', restartSameQuiz);
         restartNewQuizButton.addEventListener('click', () => {
             generateRandomQuiz(currentDifficulty);
+        });
+        continueToNextLevelButton.addEventListener('click', () => {
+            const nextDifficulty = continueToNextLevelButton.dataset.nextLevel;
+            if (nextDifficulty) {
+                startQuizFromMenu(nextDifficulty);
+            }
         });
         submitTextAnswer.addEventListener('click', handleTextInputAnswer);
         textAnswerInput.addEventListener('keypress', function(event) {

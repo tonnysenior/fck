@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FCK Dynamisk Quiz Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* ... (style-sektionen er uændret) ... */
+        body { font-family: 'Inter', sans-serif; }
+        .correct { background-color: #28a745 !important; color: white !important; }
+        .incorrect { background-color: #dc3545 !important; color: white !important; }
+        .rationale { font-size: 0.8rem; color: #6c757d; margin-top: 4px; }
+        button:disabled { opacity: 0.7; cursor: not-allowed; }
+        #name-input:focus, #text-answer-input:focus { 
+            outline: none; 
+            box-shadow: 0 0 0 2px #3b82f6; 
+            border-color: #3b82f6;
+        }
+        em { font-style: italic; }
+        .quiz-button {
+            transition: all 0.2s ease-in-out;
+        }
+        .quiz-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <div id="start-screen" class="bg-white p-6 md:p-8 rounded-lg shadow-xl w-full max-w-xl text-center">
+        <h1 class="text-2xl md:text-3xl font-bold mb-6 text-blue-900">FCK Quiz Generator</h1>
+        <div id="name-entry">
+             <label for="name-input" class="block text-lg font-semibold mb-2 text-gray-700">Indtast dit navn:</label>
+             <input type="text" id="name-input" placeholder="Dit navn..." class="w-full px-4 py-2 border border-gray-300 rounded-md mb-4">
+        </div>
+        <label class="block text-lg font-semibold mb-3 text-gray-700">Vælg sværhedsgrad:</label>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <button id="start-easy-quiz" class="quiz-button w-full px-4 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 font-semibold">
+                <span class="block text-xl">Let</span>
+                <span class="block text-xs">Navn, Nr, Position</span>
+            </button>
+            <button id="start-normal-quiz" class="quiz-button w-full px-4 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-semibold">
+                <span class="block text-xl">Normal</span>
+                <span class="block text-xs">+ Nationalitet & Stab</span>
+            </button>
+            <button id="start-hard-quiz" class="quiz-button w-full px-4 py-3 bg-red-600 text-white rounded-md hover:bg-red-700 font-semibold">
+                <span class="block text-xl">Ekspert</span>
+                <span class="block text-xs">+ Fødselsår & Frit Svar</span>
+            </button>
+        </div>
+        <p class="text-xs text-gray-500 mt-3">Bruger de "ubrugte" personer i puljen, indtil den er tom.</p>
+    </div>
+
+
+    <div id="quiz-container" class="bg-white p-6 md:p-8 rounded-lg shadow-xl w-full max-w-xl text-center hidden">
+        <h1 id="quiz-title" class="text-2xl md:text-3xl font-bold mb-6 text-blue-900">FCK Quiz</h1>
+        
+        <div id="question-area" class="mb-6">
+            <p id="question-number" class="text-sm text-gray-500 mb-2"></p>
+            <p id="question-text" class="text-lg font-semibold mb-4"></p>
+            <div id="answer-options" class="grid grid-cols-1 gap-3"></div>
+            <div id="text-input-area" class="hidden mt-4">
+                <input type="text" id="text-answer-input" placeholder="Indtast dit svar..." class="w-full px-4 py-2 border border-gray-300 rounded-md mb-3">
+                <button id="submit-text-answer" class="w-full px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">Svar</button>
+            </div>
+        </div>
+
+        <div id="feedback-area" class="mt-4 hidden">
+            <p id="feedback-question-text" class="text-sm italic text-gray-600 mb-2"></p>
+            <p id="feedback-text" class="font-semibold mb-2"></p>
+            <p id="rationale-text" class="text-sm text-gray-700"></p>
+            <button id="next-button" class="mt-4 px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">Næste Spørgsmål</button>
+        </div>
+        <div id="results-area" class="hidden text-center">
+            <h2 class="text-xl font-bold mb-4">Resultat for <span id="player-name" class="text-blue-700"></span></h2>
+            <p id="score" class="text-lg mb-4"></p>
+            <p id="final-message" class="mb-6"></p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-6">
+                <button id="restart-same-quiz-button" class="quiz-button px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">Tag Samme Quiz Igen</button>
+                <button id="restart-new-quiz-button" class="quiz-button px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition">Ny Quiz (Resterende Pulje)</button>
+            </div>
+            <button id="email-button" class="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition mt-4 w-full">Send Resultat via E-mail</button>
+            <button id="back-to-start-button" class="px-6 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition mt-2 w-full">Tilbage til Start (Nyt Navn)</button>
+        </div>
+    </div>
+
+    <script>
+        // === DATABASER ===
+        // ... (spillerDatabase og stabDatabase er uændrede) ...
+        const spillerDatabase = [
+          { "nummer": 1, "navn": "Dominik Kotarski", "position": "Målmand", "nationalitet": "Kroatien", "fødselsdato": "2000-02-10", "type": "Spiller" },
+          { "nummer": 31, "navn": "Rúnar Alex Rúnarsson", "position": "Målmand", "nationalitet": "Island", "fødselsdato": "1995-02-18", "type": "Spiller" },
+          { "nummer": 61, "navn": "Oscar Gadeberg Buur", "position": "Målmand", "nationalitet": "Danmark", "fødselsdato": "2006-10-29", "type": "Spiller" },
+          { "nummer": 4, "navn": "Munashe Garananga", "position": "Forsvar", "nationalitet": "Zimbabwe", "fødselsdato": "2001-01-18", "type": "Spiller" },
+          { "nummer": 5, "navn": "Gabriel Pereira", "position": "Forsvar", "nationalitet": "Brasilien", "fødselsdato": "2000-05-07", "type": "Spiller" },
+          { "nummer": 6, "navn": "Pantelis Hatzidiakos", "position": "Forsvar", "nationalitet": "Grækenland", "fødselsdato": "1997-01-18", "type": "Spiller" },
+          { "nummer": 13, "navn": "Rodrigo Huescas", "position": "Forsvar", "nationalitet": "Mexico", "fødselsdato": "2003-09-18", "type": "Spiller" },
+          { "nummer": 15, "navn": "Marcos Lopez", "position": "Forsvar", "nationalitet": "Peru", "fødselsdato": "1999-11-20", "type": "Spiller" },
+          { "nummer": 20, "navn": "Junnosuke Suzuki", "position": "Forsvar", "nationalitet": "Japan", "fødselsdato": "2003-07-12", "type": "Spiller" },
+          { "nummer": 22, "navn": "Yoram Zague", "position": "Forsvar", "nationalitet": "Frankrig", "fødselsdato": "2006-05-15", "type": "Spiller" },
+          { "nummer": 24, "navn": "Birger Meling", "position": "Forsvar", "nationalitet": "Norge", "fødselsdato": "1994-12-17", "type": "Spiller" },
+          { "nummer": 8, "navn": "Magnus Mattsson", "position": "Midtbane", "nationalitet": "Danmark", "fødselsdato": "1999-02-25", "type": "Spiller" },
+          { "nummer": 12, "navn": "Lukas Lerager", "position": "Midtbane", "nationalitet": "Danmark", "fødselsdato": "1993-07-12", "type": "Spiller" },
+          { "nummer": 21, "navn": "Mads Emil Madsen", "position": "Midtbane", "nationalitet": "Danmark", "fødselsdato": "1998-01-14", "type": "Spiller" },
+          { "nummer": 23, "navn": "Dominik Sarapata", "position": "Midtbane", "nationalitet": "Polen", "fødselsdato": "2007-10-25", "type": "Spiller" },
+          { "nummer": 27, "navn": "Thomas Delaney", "position": "Midtbane", "nationalitet": "Danmark", "fødselsdato": "1991-09-03", "type": "Spiller" },
+          { "nummer": 29, "navn": "Jonathan Moalem", "position": "Midtbane", "nationalitet": "Danmark", "fødselsdato": "2007-02-01", "type": "Spiller" },
+          { "nummer": 36, "navn": "William Clem", "position": "Midtbane", "nationalitet": "Danmark", "fødselsdato": "2004-06-20", "type": "Spiller" },
+          { "nummer": 38, "navn": "Oliver Højer", "position": "Midtbane", "nationalitet": "Danmark", "fødselsdato": "2007-01-24", "type": "Spiller" },
+          { "nummer": 7, "navn": "Viktor Claesson", "position": "Angreb", "nationalitet": "Sverige", "fødselsdato": "1992-01-02", "type": "Spiller" },
+          { "nummer": 9, "navn": "Youssoufa Moukoko", "position": "Angreb", "nationalitet": "Tyskland", "fødselsdato": "2004-11-20", "type": "Spiller" },
+          { "nummer": 10, "navn": "Mohamed Elyounoussi", "position": "Angreb", "nationalitet": "Norge", "fødselsdato": "1994-08-04", "type": "Spiller" },
+          { "nummer": 11, "navn": "Jordan Larsson", "position": "Angreb", "nationalitet": "Sverige", "fødselsdato": "1997-06-20", "type": "Spiller" },
+          { "nummer": 14, "navn": "Andreas Cornelius", "position": "Angreb", "nationalitet": "Danmark", "fødselsdato": "1993-03-16", "type": "Spiller" },
+          { "nummer": 16, "navn": "Robert Silva", "position": "Angreb", "nationalitet": "Brasilien", "fødselsdato": "2005-04-13", "type": "Spiller" },
+          { "nummer": 30, "navn": "Elias Achouri", "position": "Angreb", "nationalitet": "Tunesien", "fødselsdato": "1999-02-10", "type": "Spiller" },
+          { "nummer": 49, "navn": "Liam West", "position": "Angreb", "nationalitet": "Norge", "fødselsdato": "2007-12-16", "type": "Spiller" }
+        ];
+        const stabDatabase = [
+          { "navn": "Jacob Neestrup", "position": "Cheftræner", "nationalitet": "Danmark", "fødselsdato": "1988-03-08", "type": "Stab" },
+          { "navn": "Hjalte Bo Nørregaard", "position": "Assistenttræner", "nationalitet": "Danmark", "fødselsdato": "1981-04-08", "type": "Stab" },
+          { "navn": "Stefan Madsen", "position": "Assistenttræner", "nationalitet": "Danmark", "fødselsdato": null, "type": "Stab" },
+          { "navn": "Sergio Almenara", "position": "Assistenttræner", "nationalitet": "Spanien", "fødselsdato": "1980-04-07", "type": "Stab" },
+          { "navn": "Kim Christensen", "position": "Målmandstræner", "nationalitet": "Danmark", "fødselsdato": "1979-07-16", "type": "Stab" },
+          { "navn": "Ben Rosen", "position": "Fysisk træner", "nationalitet": "England", "fødselsdato": null, "type": "Stab" }
+        ];
+        const personDatabase = [...spillerDatabase, ...stabDatabase];
+        // === SLUT PÅ DATABASER ===
+
+
+        // === GLOBALE VARIABLER ===
+        // ... (uændrede) ...
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let questions = [];
+        let playerName = '';
+        let quizData = { questions: [] }; 
+        let sessionUsedPersons = [];
+        let currentDifficulty = 'normal';
+
+        // === DOM ELEMENTER ===
+        const startScreen = document.getElementById('start-screen');
+        const quizContainer = document.getElementById('quiz-container');
+        const nameInput = document.getElementById('name-input');
+        const startEasyButton = document.getElementById('start-easy-quiz');
+        const startNormalButton = document.getElementById('start-normal-quiz');
+        const startHardButton = document.getElementById('start-hard-quiz');
+        const quizTitleEl = document.getElementById('quiz-title');
+        const questionArea = document.getElementById('question-area');
+        const feedbackArea = document.getElementById('feedback-area');
+        const resultsArea = document.getElementById('results-area');
+        const questionNumberEl = document.getElementById('question-number');
+        const questionTextEl = document.getElementById('question-text');
+        const answerOptionsEl = document.getElementById('answer-options');
+        const feedbackTextEl = document.getElementById('feedback-text');
+        const rationaleTextEl = document.getElementById('rationale-text');
+        const nextButton = document.getElementById('next-button');
+        const scoreEl = document.getElementById('score');
+        const finalMessageEl = document.getElementById('final-message');
+        const playerNameEl = document.getElementById('player-name');
+        const emailButton = document.getElementById('email-button');
+        const backToStartButton = document.getElementById('back-to-start-button');
+        const restartSameQuizButton = document.getElementById('restart-same-quiz-button');
+        const restartNewQuizButton = document.getElementById('restart-new-quiz-button');
+        const textInputArea = document.getElementById('text-input-area');
+        const textAnswerInput = document.getElementById('text-answer-input');
+        const submitTextAnswer = document.getElementById('submit-text-answer');
+        
+        // === START PÅ ÆNDRING 2: NYT DOM ELEMENT ===
+        const feedbackQuestionTextEl = document.getElementById('feedback-question-text');
+        // === SLUT PÅ ÆNDRING 2 ===
+
+
+        // === HJÆLPEFUNKTIONER ===
+        // ... (uændrede) ...
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array; 
+        }
+        function getUniqueWrongOptions(sourceArray, correctValue, count) {
+            let wrongOptions = new Set();
+            let shuffledSource = shuffleArray([...sourceArray]);
+            for (const item of shuffledSource) {
+                if (item !== correctValue) {
+                    wrongOptions.add(item);
+                }
+                if (wrongOptions.size >= count) {
+                    break;
+                }
+            }
+            return Array.from(wrongOptions);
+        }
+
+        // === QUIZ GENERATOR ===
+        // ... (uændret - hele 'generateRandomQuiz' er den samme) ...
+        const questionTypes = { SPILLER_NR_TIL_NAVN: 0, SPILLER_NAVN_TIL_NR: 1, PERSON_NAVN_TIL_POS: 2, PERSON_NAVN_TIL_NAT: 3, PERSON_NAVN_TIL_AAR: 4, STAB_POS_TIL_NAVN: 5, TÆL_NATIONALITET: 6 };
+        const difficultySettings = {
+            easy: [ questionTypes.SPILLER_NR_TIL_NAVN, questionTypes.SPILLER_NAVN_TIL_NR, questionTypes.PERSON_NAVN_TIL_POS ],
+            normal: [ questionTypes.SPILLER_NR_TIL_NAVN, questionTypes.SPILLER_NAVN_TIL_NR, questionTypes.PERSON_NAVN_TIL_POS, questionTypes.PERSON_NAVN_TIL_NAT, questionTypes.STAB_POS_TIL_NAVN ],
+            hard: [ questionTypes.SPILLER_NR_TIL_NAVN, questionTypes.SPILLER_NAVN_TIL_NR, questionTypes.PERSON_NAVN_TIL_POS, questionTypes.PERSON_NAVN_TIL_NAT, questionTypes.PERSON_NAVN_TIL_AAR, questionTypes.STAB_POS_TIL_NAVN, questionTypes.TÆL_NATIONALITET ]
+        };
+        function generateRandomQuiz(difficulty) {
+            const allowedTypes = difficultySettings[difficulty];
+            quizTitleEl.textContent = `FCK Quiz (${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)})`;
+            let availablePlayers = spillerDatabase.filter(p => !sessionUsedPersons.some(used => used.navn === p.navn));
+            let availableStab = stabDatabase.filter(s => !sessionUsedPersons.some(used => used.navn === s.navn));
+            if (availablePlayers.length < 5 && availableStab.length === 0) {
+                alert("Alle personer fra truppen er blevet brugt! Vi starter forfra med en frisk pulje.");
+                sessionUsedPersons = [];
+                availablePlayers = [...spillerDatabase];
+                availableStab = [...stabDatabase];
+            }
+            let newQuestions = [];
+            let quizPersons = [];
+            let questionTypeCounts = {};
+            const numQuestions = 10;
+            while (newQuestions.length < numQuestions) {
+                let questionData = null;
+                let questionType = allowedTypes[Math.floor(Math.random() * allowedTypes.length)];
+                const isTextInput = (difficulty === 'hard' && (questionType === questionTypes.SPILLER_NR_TIL_NAVN || questionType === questionTypes.SPILLER_NAVN_TIL_NR));
+                if ((questionType === questionTypes.SPILLER_NAVN_TIL_NR || questionType === questionTypes.SPILLER_NR_TIL_NAVN) && availablePlayers.length === 0) { questionType = questionTypes.PERSON_NAVN_TIL_POS; }
+                if (questionType === questionTypes.STAB_POS_TIL_NAVN && availableStab.length === 0) { questionType = questionTypes.PERSON_NAVN_TIL_POS; }
+                if (questionType === questionTypes.TÆL_NATIONALITET && (questionTypeCounts[questionType] || 0) > 0) { questionType = questionTypes.PERSON_NAVN_TIL_NAT; }
+                let correctPerson = null;
+                switch(questionType) {
+                    case questionTypes.SPILLER_NR_TIL_NAVN: {
+                        correctPerson = shuffleArray(availablePlayers).find(p => !quizPersons.includes(p.navn));
+                        if (!correctPerson) continue;
+                        questionData = { question: `Hvem bærer rygnummer ${correctPerson.nummer}?`, correct: correctPerson.navn, rationale: `${correctPerson.navn} bærer korrekt nummer ${correctPerson.nummer}.` };
+                        if (!isTextInput) {
+                            const wrongPlayers = personDatabase.filter(p => p.navn !== correctPerson.navn && p.type === 'Spiller');
+                            questionData.wrong = getUniqueWrongOptions(wrongPlayers.map(p => p.navn), correctPerson.navn, 3).map(navn => ({ text: navn, rationale: `${navn} bærer nummer ${personDatabase.find(p => p.navn === navn).nummer}.` }));
+                        }
+                        break;
+                    }
+                    case questionTypes.SPILLER_NAVN_TIL_NR: {
+                        correctPerson = shuffleArray(availablePlayers).find(p => !quizPersons.includes(p.navn));
+                        if (!correctPerson) continue;
+                        questionData = { question: `Hvilket rygnummer har ${correctPerson.navn}?`, correct: correctPerson.nummer.toString(), rationale: `${correctPerson.navn} bærer korrekt nummer ${correctPerson.nummer}.` };
+                        if (!isTextInput) {
+                            const wrongPlayers = personDatabase.filter(p => p.navn !== correctPerson.navn && p.type === 'Spiller');
+                            questionData.wrong = getUniqueWrongOptions(wrongPlayers.map(p => p.nummer.toString()), correctPerson.nummer.toString(), 3).map(num => ({ text: num, rationale: `Nummer ${num} tilhører ${personDatabase.find(p => p.nummer.toString() === num).navn}.` }));
+                        }
+                        break;
+                    }
+                    case questionTypes.PERSON_NAVN_TIL_POS: {
+                        let pool = (difficulty === 'easy') ? availablePlayers : [...availablePlayers, ...availableStab];
+                        correctPerson = shuffleArray(pool).find(p => !quizPersons.includes(p.navn));
+                        if (!correctPerson) continue;
+                        const allPositions = [...new Set(personDatabase.map(p => p.position))];
+                        const wrongOptions = getUniqueWrongOptions(allPositions, correctPerson.position, 3);
+                        questionData = { question: `Hvilken position/stilling har ${correctPerson.navn}?`, correct: correctPerson.position, rationale: `${correctPerson.navn} er korrekt ${correctPerson.position}.`, wrong: wrongOptions.map(pos => ({ text: pos, rationale: `${correctPerson.navn} er ${correctPerson.position}, ikke ${pos}.` })) };
+                        break;
+                    }
+                    case questionTypes.PERSON_NAVN_TIL_NAT: {
+                        let pool = [...availablePlayers, ...availableStab];
+                        correctPerson = shuffleArray(pool).find(p => !quizPersons.includes(p.navn));
+                        if (!correctPerson) continue;
+                        const allNats = [...new Set(personDatabase.map(p => p.nationalitet))];
+                        const wrongOptions = getUniqueWrongOptions(allNats, correctPerson.nationalitet, 3);
+                        questionData = { question: `Hvilken nationalitet har ${correctPerson.navn}?`, correct: correctPerson.nationalitet, rationale: `${correctPerson.navn} er korrekt fra ${correctPerson.nationalitet}.`, wrong: wrongOptions.map(nat => ({ text: nat, rationale: `${correctPerson.navn} er fra ${correctPerson.nationalitet}.` })) };
+                        break;
+                    }
+                    case questionTypes.PERSON_NAVN_TIL_AAR: {
+                        let pool = [...availablePlayers, ...availableStab].filter(p => p.fødselsdato);
+                        correctPerson = shuffleArray(pool).find(p => !quizPersons.includes(p.navn));
+                        if (!correctPerson) continue;
+                        const year = correctPerson.fødselsdato.substring(0, 4);
+                        const allYears = [...new Set(personDatabase.filter(p => p.fødselsdato).map(p => p.fødselsdato.substring(0, 4)))];
+                        const wrongOptions = getUniqueWrongOptions(allYears, year, 3);
+                        questionData = { question: `Hvilket år er ${correctPerson.navn} født?`, correct: year, rationale: `${correctPerson.navn} er korrekt født i ${year}.`, wrong: wrongOptions.map(y => ({ text: y, rationale: `${correctPerson.navn} er født i ${year}.` })) };
+                        break;
+                    }
+                    case questionTypes.STAB_POS_TIL_NAVN: {
+                        correctPerson = shuffleArray(availableStab).find(p => !quizPersons.includes(p.navn));
+                        if (!correctPerson) continue;
+                        const wrongStab = stabDatabase.filter(s => s.navn !== correctPerson.navn);
+                        const wrongOptions = getUniqueWrongOptions(wrongStab.map(s => s.navn), correctPerson.navn, 3);
+                        questionData = { question: `Hvem har stillingen: ${correctPerson.position}?`, correct: correctPerson.navn, rationale: `${correctPerson.position} er korrekt ${correctPerson.navn}.`, wrong: wrongOptions.map(navn => ({ text: navn, rationale: `${navn} er ${stabDatabase.find(s=>s.navn === navn).position}.` })) };
+                        break;
+                    }
+                    case questionTypes.TÆL_NATIONALITET: {
+                        const natCounts = {};
+                        spillerDatabase.forEach(p => { natCounts[p.nationalitet] = (natCounts[p.nationalitet] || 0) + 1; });
+                        const popularNats = Object.keys(natCounts).filter(nat => natCounts[nat] > 1);
+                        if (popularNats.length === 0) continue;
+                        const natToCount = shuffleArray(popularNats)[0];
+                        const correctCount = natCounts[natToCount];
+                        let wrongCounts = new Set([correctCount + 1, Math.max(1, correctCount - 1), correctCount + 2]);
+                        while(wrongCounts.size < 3 || wrongCounts.has(correctCount)) { wrongCounts.add(Math.max(1, correctCount + Math.floor(Math.random() * 3) - 1)); wrongCounts.delete(correctCount); }
+                        questionData = { question: `Hvor mange spillere fra ${natToCount} er der i A-truppen?`, correct: correctCount.toString(), rationale: `Der er korrekt ${correctCount} spillere fra ${natToCount} (f.eks. ${spillerDatabase.filter(p=>p.nationalitet === natToCount).map(p=>p.navn).join(', ')}).`, wrong: Array.from(wrongCounts).slice(0,3).map(c => ({ text: c.toString(), rationale: `Det korrekte antal er ${correctCount}.` })) };
+                        break;
+                    }
+                }
+                if (questionData) {
+                    if (isTextInput) {
+                        newQuestions.push({ questionNumber: newQuestions.length + 1, question: questionData.question, isTextInput: true, correctAnswer: questionData.correct, rationale: questionData.rationale, questionType: questionType });
+                    } else {
+                        let answerOptions = [];
+                        answerOptions.push({ text: questionData.correct, rationale: questionData.rationale, isCorrect: true });
+                        questionData.wrong.forEach(opt => { answerOptions.push({ text: opt.text, rationale: opt.rationale, isCorrect: false }); });
+                        shuffleArray(answerOptions);
+                        newQuestions.push({ questionNumber: newQuestions.length + 1, question: questionData.question, answerOptions: answerOptions, isTextInput: false });
+                    }
+                    questionTypeCounts[questionType] = (questionTypeCounts[questionType] || 0) + 1;
+                    if (correctPerson) {
+                        quizPersons.push(correctPerson.navn);
+                        sessionUsedPersons.push(correctPerson);
+                        availablePlayers = availablePlayers.filter(p => p.navn !== correctPerson.navn);
+                        availableStab = availableStab.filter(s => s.navn !== correctPerson.navn);
+                    }
+                }
+            }
+            quizData = { questions: newQuestions };
+            startQuizLogic();
+        }
+
+
+        // === KERNELOGIK FOR QUIZ ===
+        // ... (uændret) ...
+        function startQuizLogic() {
+            if (!playerName) return;
+            startScreen.classList.add('hidden');
+            quizContainer.classList.remove('hidden');
+            currentQuestionIndex = 0;
+            score = 0;
+            questions = [...quizData.questions]; 
+            resultsArea.classList.add('hidden');
+            feedbackArea.classList.add('hidden');
+            questionArea.classList.remove('hidden');
+            loadQuestion();
+        }
+        function initializeQuiz(difficulty) {
+            playerName = nameInput.value.trim();
+            if (!playerName) {
+                alert("Indtast venligst dit navn for at starte.");
+                return;
+            }
+            currentDifficulty = difficulty;
+            generateRandomQuiz(difficulty);
+        }
+        function restartSameQuiz() {
+            startQuizLogic(); 
+        }
+        function loadQuestion() {
+            feedbackArea.classList.add('hidden');
+            questionArea.classList.remove('hidden');
+            const currentQuestion = questions[currentQuestionIndex];
+            questionNumberEl.textContent = `Spørgsmål ${currentQuestionIndex + 1} af ${questions.length}`;
+            questionTextEl.innerHTML = currentQuestion.question; 
+            if (currentQuestion.isTextInput) {
+                answerOptionsEl.innerHTML = '';
+                answerOptionsEl.classList.add('hidden');
+                textInputArea.classList.remove('hidden');
+                textAnswerInput.value = '';
+                textAnswerInput.focus();
+            } else {
+                textInputArea.classList.add('hidden');
+                answerOptionsEl.classList.remove('hidden');
+                answerOptionsEl.innerHTML = '';
+                const options = [...currentQuestion.answerOptions];
+                options.forEach(option => {
+                    const button = document.createElement('button');
+                    button.innerHTML = option.text; 
+                    button.classList.add('w-full', 'px-4', 'py-3', 'bg-gray-200', 'rounded-md', 'hover:bg-gray-300', 'transition', 'duration-200', 'text-left');
+                    button.dataset.correct = option.isCorrect;
+                    button.dataset.rationale = option.rationale;
+                    button.onclick = handleAnswer;
+                    answerOptionsEl.appendChild(button);
+                });
+            }
+        }
+
+        // === START PÅ ÆNDRING 3: OPDATERET handleAnswer ===
+        function handleAnswer(event) {
+            const selectedButton = event.target.closest('button');
+            const isCorrect = selectedButton.dataset.correct === 'true';
+            const rationale = selectedButton.dataset.rationale;
+            const buttons = answerOptionsEl.querySelectorAll('button');
+            buttons.forEach(button => {
+                button.disabled = true;
+                if (button.dataset.correct === 'true') {
+                    button.classList.add('correct');
+                } else if (button === selectedButton) {
+                    button.classList.add('incorrect');
+                }
+            });
+
+            if (isCorrect) {
+                score++;
+                feedbackTextEl.textContent = 'Korrekt!';
+                feedbackTextEl.style.color = '#28a745';
+            } else {
+                feedbackTextEl.textContent = 'Forkert!';
+                feedbackTextEl.style.color = '#dc3545';
+            }
+
+            // TILFØJET LINJE:
+            feedbackQuestionTextEl.innerHTML = questions[currentQuestionIndex].question;
+            rationaleTextEl.innerHTML = rationale; 
+            questionArea.classList.add('hidden');
+            feedbackArea.classList.remove('hidden');
+
+            if (currentQuestionIndex === questions.length - 1) {
+                nextButton.textContent = 'Se Resultat';
+            } else {
+                nextButton.textContent = 'Næste Spørgsmål';
+            }
+        }
+        // === SLUT PÅ ÆNDRING 3 ===
+
+
+        // === START PÅ ÆNDRING 4: OPDATERET handleTextInputAnswer ===
+        function handleTextInputAnswer() {
+            const currentQuestion = questions[currentQuestionIndex];
+            const givenAnswer = textAnswerInput.value.trim().toLowerCase();
+            const correctAnswer = currentQuestion.correctAnswer.toLowerCase();
+            let isCorrect = (givenAnswer === correctAnswer);
+            if (!isCorrect && currentQuestion.questionType === questionTypes.SPILLER_NR_TIL_NAVN) {
+                const nameParts = correctAnswer.split(' ');
+                const lastName = nameParts[nameParts.length - 1].toLowerCase();
+                if (givenAnswer === lastName) {
+                    isCorrect = true;
+                }
+            }
+
+            let rationale;
+            if (isCorrect) {
+                score++;
+                feedbackTextEl.textContent = 'Korrekt!';
+                feedbackTextEl.style.color = '#28a745';
+                rationale = currentQuestion.rationale;
+            } else {
+                feedbackTextEl.textContent = 'Forkert!';
+                feedbackTextEl.style.color = '#dc3545';
+                rationale = `Det korrekte svar er <strong>${currentQuestion.correctAnswer}</strong>. ${currentQuestion.rationale}`;
+            }
+
+            // TILFØJET LINJE:
+            feedbackQuestionTextEl.innerHTML = currentQuestion.question;
+            rationaleTextEl.innerHTML = rationale; 
+            questionArea.classList.add('hidden');
+            feedbackArea.classList.remove('hidden');
+
+            if (currentQuestionIndex === questions.length - 1) {
+                nextButton.textContent = 'Se Resultat';
+            } else {
+                nextButton.textContent = 'Næste Spørgsmål';
+            }
+        }
+        // === SLUT PÅ ÆNDRING 4 ===
+
+        function showResults() {
+            // ... (uændret) ...
+            feedbackArea.classList.add('hidden');
+            resultsArea.classList.remove('hidden');
+            playerNameEl.textContent = playerName;
+            scoreEl.textContent = `Du fik ${score} ud af ${questions.length} rigtige!`;
+            if (questions.length === 0) {
+                 restartSameQuizButton.classList.add('hidden');
+            } else if (score === questions.length) {
+                restartSameQuizButton.classList.add('hidden');
+            } else {
+                restartSameQuizButton.classList.remove('hidden');
+            }
+            let message = '';
+            const percentage = questions.length > 0 ? (score / questions.length) * 100 : 0;
+             if (percentage === 100) {
+                 message = 'Perfekt score! Du er en ægte FCK-kender!';
+             } else if (percentage >= 70) {
+                 message = 'Flot resultat! Du har godt styr på tingene.';
+             } else if (percentage >= 40) {
+                 message = 'Godt forsøgt! Lidt mere træning, så sidder den der.';
+             } else {
+                 message = 'Øv! Det kræver vist lidt mere øvelse.';
+             }
+            finalMessageEl.textContent = message;
+            emailButton.onclick = sendEmail;
+        }
+
+        function sendEmail() {
+            // ... (uændret) ...
+            const recipient = "tonnysenior@gmail.com";
+            const subject = `FCK Quiz Resultat for ${playerName}`;
+            const body = `Hej,\n\Her er resultatet for ${playerName} i quizzen "${quizTitleEl.textContent}":\n\Score: ${score} ud af ${questions.length}\n\n${finalMessageEl.textContent}\n\nMvh\nQuizzen`;
+            const encodedSubject = encodeURIComponent(subject);
+            const encodedBody = encodeURIComponent(body);
+            const mailtoLink = `mailto:${recipient}?subject=${encodedSubject}&body=${encodedBody}`;
+            window.location.href = mailtoLink;
+        }
+
+        function goBackToStart() {
+             quizContainer.classList.add('hidden');
+             startScreen.classList.remove('hidden');
+             playerName = ''; 
+             nameInput.value = '';
+             sessionUsedPersons = [];
+        }
+
+        // === EVENT LISTENERS ===
+        // ... (uændrede) ...
+        function startQuizFromMenu(difficulty) {
+            playerName = nameInput.value.trim();
+            if (!playerName) {
+                alert("Indtast venligst dit navn for at starte.");
+                return;
+            }
+            currentDifficulty = difficulty;
+            sessionUsedPersons = [];
+            generateRandomQuiz(difficulty);
+        }
+        startEasyButton.addEventListener('click', () => startQuizFromMenu('easy'));
+        startNormalButton.addEventListener('click', () => startQuizFromMenu('normal'));
+        startHardButton.addEventListener('click', () => startQuizFromMenu('hard'));
+        nextButton.addEventListener('click', () => {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < questions.length) {
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        });
+        backToStartButton.addEventListener('click', goBackToStart);
+        restartSameQuizButton.addEventListener('click', restartSameQuiz);
+        restartNewQuizButton.addEventListener('click', () => {
+            generateRandomQuiz(currentDifficulty);
+        });
+        submitTextAnswer.addEventListener('click', handleTextInputAnswer);
+        textAnswerInput.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                handleTextInputAnswer();
+            }
+        });
+        
+    </script>
+
+</body>
+</html>

@@ -32,9 +32,12 @@
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
+        #timer-display {
+            transition: color 0.3s ease-in-out;
+        }
     </style>
 </head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen p-4">
+<body class="bg-gray-100 flex justify-center min-h-screen p-4 pt-16 md:pt-4 md:items-center">
 
     <div id="start-screen" class="bg-white p-6 md:p-8 rounded-lg shadow-xl w-full max-w-xl text-center">
         <h1 class="text-2xl md:text-3xl font-bold mb-6 text-blue-900">FCK Quiz Generator</h1>
@@ -54,7 +57,7 @@
             </button>
             <button id="start-hard-quiz" class="quiz-button w-full px-4 py-3 bg-red-600 text-white rounded-md" disabled>
                 <span class="block text-xl">Ekspert 🔒</span>
-                <span class="block text-xs">Klar 'Normal' for at låse op</span>
+                <span class="block text-xs">Mest Frit Svar (15s. timer)</span>
             </button>
         </div>
         <p class="text-xs text-gray-500 mt-3">Du skal klare et niveau med 100% rigtige for at låse op for det næste.</p>
@@ -62,6 +65,7 @@
 
 
     <div id="quiz-container" class="bg-white p-6 md:p-8 rounded-lg shadow-xl w-full max-w-xl text-center hidden">
+        <div id="timer-display" class="hidden text-3xl font-bold mb-4">15</div>
         <h1 id="quiz-title" class="text-2xl md:text-3xl font-bold mb-6 text-blue-900">FCK Quiz</h1>
         <div id="question-area" class="mb-6">
             <p id="question-number" class="text-sm text-gray-500 mb-2"></p>
@@ -148,6 +152,9 @@
         let sessionUsedPersons = [];
         let currentDifficulty = 'normal';
         let quizInProgress = false;
+        let timerInterval = null;
+        let timeLeft = 15;
+        const TIMER_DURATION = 15;
 
         // === DOM ELEMENTER ===
         // ... (uændrede) ...
@@ -179,6 +186,7 @@
         const textAnswerInput = document.getElementById('text-answer-input');
         const submitTextAnswer = document.getElementById('submit-text-answer');
         const continueToNextLevelButton = document.getElementById('continue-to-next-level-button');
+        const timerDisplay = document.getElementById('timer-display');
 
 
         // === HJÆLPEFUNKTIONER ===
@@ -239,6 +247,12 @@
             let quizPersons = [];
             let questionTypeCounts = {};
             while (newQuestions.length < numQuestions) {
+                if (difficulty === 'easy' && availablePlayers.length === 0) {
+                    break; 
+                }
+                if (difficulty !== 'easy' && availablePlayers.length === 0 && availableStab.length === 0) {
+                    break; 
+                }
                 let questionData = null;
                 let questionType = allowedTypes[Math.floor(Math.random() * allowedTypes.length)];
                 const isTextInput = (difficulty === 'hard' && 
@@ -297,7 +311,12 @@
                         if (!correctPerson) continue;
                         const allNats = [...new Set(personDatabase.map(p => p.nationalitet))];
                         const wrongOptions = getUniqueWrongOptions(allNats, correctPerson.nationalitet, 3);
-                        questionData = { question: `Hvilken nationalitet har ${correctPerson.navn}?`, correct: correctPerson.nationalitet, rationale: `${correctPerson.navn} er korrekt fra ${correctPerson.nationalitet}.`, wrong: wrongOptions.map(nat => ({ text: nat, rationale: `${correctPerson.navn} er fra ${correctPerson.nationalitet}.` })) };
+                        questionData = { 
+                            question: `Hvor kommer ${correctPerson.navn} fra?`, 
+                            correct: correctPerson.nationalitet, 
+                            rationale: `${correctPerson.navn} er korrekt fra ${correctPerson.nationalitet}.`, 
+                            wrong: wrongOptions.map(nat => ({ text: nat, rationale: `${correctPerson.navn} er fra ${correctPerson.nationalitet}.` })) 
+                        };
                         break;
                     }
                     case questionTypes.PERSON_NAVN_TIL_AAR: {
@@ -372,9 +391,11 @@
             quizData = { questions: newQuestions };
             startQuizLogic();
         }
+        // === SLUT PÅ DEN ENESTE ÆNDRING ===
 
 
         // === KERNELOGIK FOR QUIZ ===
+        
         // ... (uændret) ...
         function startQuizLogic() {
             if (!playerName) return;
@@ -404,7 +425,61 @@
         function restartSameQuiz() {
             startQuizLogic(); 
         }
+        function stopTimer() {
+            clearInterval(timerInterval);
+            timerDisplay.classList.add('hidden');
+        }
+        function handleTimeUp() {
+            stopTimer();
+            quizInProgress = true;
+            textAnswerInput.disabled = true;
+            submitTextAnswer.disabled = true;
+            answerOptionsEl.querySelectorAll('button').forEach(b => b.disabled = true);
+            feedbackTextEl.textContent = 'Tiden løb ud!';
+            feedbackTextEl.style.color = '#dc3545';
+            const currentQuestion = questions[currentQuestionIndex];
+            let rationale = "";
+            if (currentQuestion.isTextInput) {
+                rationale = `Det korrekte svar er <strong>${currentQuestion.correctAnswer}</strong>. ${currentQuestion.rationale}`;
+            } else {
+                const correctOpt = currentQuestion.answerOptions.find(opt => opt.isCorrect);
+                rationale = correctOpt.rationale;
+                answerOptionsEl.querySelectorAll('button').forEach(button => {
+                    if (button.dataset.correct === 'true') {
+                        button.classList.add('correct');
+                    }
+                });
+            }
+            rationaleTextEl.innerHTML = rationale;
+            feedbackQuestionTextEl.innerHTML = currentQuestion.question;
+            inlineFeedbackArea.classList.remove('hidden');
+            inlineNextButton.classList.remove('hidden'); 
+        }
+        
+        // === START PÅ ÆNDRING 3: OPDATERET startTimer (Rettelse af frys) ===
+        function startTimer() {
+            timeLeft = TIMER_DURATION;
+            timerDisplay.textContent = timeLeft;
+            timerDisplay.classList.remove('hidden');
+            timerDisplay.classList.remove('text-red-600'); 
+            
+            clearInterval(timerInterval); // RETTELSE: Brug kun clearInterval her
+            
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timerDisplay.textContent = timeLeft;
+                if (timeLeft <= 5) {
+                    timerDisplay.classList.add('text-red-600'); 
+                }
+                if (timeLeft <= 0) {
+                    handleTimeUp();
+                }
+            }, 1000);
+        }
+        // === SLUT PÅ ÆNDRING 3 ===
+
         function loadNextOrShowResults() {
+            stopTimer(); 
             currentQuestionIndex++;
             if (currentQuestionIndex < questions.length) {
                 loadQuestion();
@@ -418,6 +493,7 @@
             inlineNextButton.classList.add('hidden'); 
             questionArea.classList.remove('hidden'); 
             resultsArea.classList.add('hidden');
+            stopTimer(); 
             if (!questions[currentQuestionIndex]) {
                 console.error("Fejl: Kunne ikke indlæse spørgsmål. Går til resultater.");
                 showResults();
@@ -449,10 +525,14 @@
                     answerOptionsEl.appendChild(button);
                 });
             }
+            if (currentDifficulty === 'hard') {
+                startTimer();
+            }
         }
         function handleAnswer(event) {
             if (quizInProgress) return;
             quizInProgress = true;
+            stopTimer(); 
             const selectedButton = event.target.closest('button');
             const isCorrect = selectedButton.dataset.correct === 'true';
             const rationale = selectedButton.dataset.rationale;
@@ -483,6 +563,7 @@
         function handleTextInputAnswer() {
             if (quizInProgress) return;
             quizInProgress = true;
+            stopTimer(); 
             textAnswerInput.disabled = true;
             submitTextAnswer.disabled = true;
             const currentQuestion = questions[currentQuestionIndex];
@@ -508,10 +589,10 @@
             inlineFeedbackArea.classList.remove('hidden');
         }
 
-        // === START PÅ ÆNDRING 2: OPDATERET showResults (Rettelse af frys/lås) ===
+        // === START PÅ ÆNDRING 4: OPDATERET showResults (Ros & Knapper) ===
         function showResults() {
-            quizInProgress = false; // Lås knapperne op!
-            // feedbackArea.classList.add('hidden'); // <-- DENNE LINJE VAR FEJLEN (er nu fjernet)
+            quizInProgress = false; 
+            stopTimer();
             questionArea.classList.add('hidden'); 
             resultsArea.classList.remove('hidden');
             playerNameEl.textContent = playerName;
@@ -532,28 +613,24 @@
             let message = '';
             const percentage = questions.length > 0 ? (score / questions.length) * 100 : 0;
             
-            // NY MOTIVERENDE BESKED-LOGIK
              if (percentage === 100) {
-                 message = 'Perfekt score! Du er en ægte FCK-kender!';
-             
+                 message = 'Perfekt score!';
              } else if (percentage >= 70) {
                 const mangler = questions.length - score;
                 const plural = mangler === 1 ? "rigtigt svar" : "rigtige svar";
                 
-                if (currentDifficulty === 'easy' || currentDifficulty === 'normal') {
+                if ((currentDifficulty === 'easy' || currentDifficulty === 'normal') && questions.length > 0) {
                     message = `Flot! Du mangler kun ${mangler} ${plural} for at låse op for næste niveau.`;
                 } else {
-                    // Hvis 'Ekspert' (intet at låse op)
                     message = 'Flot resultat! Du har godt styr på tingene.';
                 }
-             
              } else if (percentage >= 40) {
                  message = 'Godt forsøgt! Lidt mere træning, så sidder den der.';
              } else {
                  message = 'Øv! Det kræver vist lidt mere øvelse.';
              }
             
-            // OPLÅSNINGS-LOGIK
+            // OPLÅSNINGS-LOGIK (Med ny ros og knap-tekst)
             if (percentage === 100 && questions.length > 0) {
                 if (currentDifficulty === 'easy') {
                     if (startNormalButton.disabled) { 
@@ -561,9 +638,9 @@
                         startNormalButton.classList.remove('opacity-60', 'cursor-not-allowed');
                         startNormalButton.querySelector('.text-xl').innerHTML = "Normal ✔️";
                         startEasyButton.querySelector('.text-xs').innerHTML = "Klaret!";
-                        message += " <strong>Flot! Du har låst op for 'Normal'.</strong>";
+                        message += " <strong>Stærkt gået! 'Normal' er nu låst op.</strong>";
                     }
-                    continueToNextLevelButton.innerHTML = "Start Normal Quiz";
+                    continueToNextLevelButton.innerHTML = "Start 'Normal' Nu";
                     continueToNextLevelButton.dataset.nextLevel = "normal";
                     continueToNextLevelButton.classList.remove('hidden');
                 } else if (currentDifficulty === 'normal') {
@@ -572,17 +649,19 @@
                         startHardButton.classList.remove('opacity-60', 'cursor-not-allowed');
                         startHardButton.querySelector('.text-xl').innerHTML = "Ekspert ✔️";
                         startNormalButton.querySelector('.text-xs').innerHTML = "Klaret!";
-                        message += " <strong>Perfekt! Du har låst op for 'Ekspert'.</strong>";
+                        message += " <strong>Suverænt! Du er klar til 'Ekspert'-udfordringen.</strong>";
                     }
-                    continueToNextLevelButton.innerHTML = "Start Ekspert Quiz";
+                    continueToNextLevelButton.innerHTML = "Prøv 'Ekspert' Nu (15s. timer)";
                     continueToNextLevelButton.dataset.nextLevel = "hard";
                     continueToNextLevelButton.classList.remove('hidden');
+                } else if (currentDifficulty === 'hard') {
+                    message += " <strong>Imponerende! Du har gennemført den sværeste quiz! Du er en ægte FCK-kender.</strong>";
                 }
             }
             finalMessageEl.innerHTML = message;
             emailButton.onclick = sendEmail;
         }
-        // === SLUT PÅ ÆNDRING 2 ===
+        // === SLUT PÅ ÆNDRING 4 ===
 
         function sendEmail() {
             // ... (uændret) ...
@@ -596,6 +675,7 @@
         }
 
         function goBackToStart() {
+             stopTimer();
              quizContainer.classList.add('hidden');
              startScreen.classList.remove('hidden');
              nameInput.value = playerName; 

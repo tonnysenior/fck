@@ -404,9 +404,13 @@
 
         // GAMEFLOW-FORBEDRING: Ny funktion til at køre bonus quizzen
         function startBonusQuiz() {
+            let name = nameInput.value.trim();
+            if (!name) name = "FCK Fan"; 
+            playerName = name; 
+            
             currentDifficulty = 'bonus';
             sessionUsedPersons = []; // Bonus quiz påvirker ikke din rigtige pulje
-            generateRandomQuiz('easy'); // Generer en 'easy' quiz
+            generateRandomQuiz('bonus'); // Generer en 'bonus' quiz
             questions = questions.slice(0, 3); // Klip den til 3 spørgsmål
             quizData.questions = questions; // Opdater quizData
             quizTitleEl.textContent = "Bonus Quiz (Lås 'Normal' op)";
@@ -439,16 +443,25 @@
             let available = pool.filter(p => !sessionUsedPersons.some(used => used.navn === p.navn));
             // Hvis puljen er for lille, genstart den
             if (available.length < count) {
-                sessionUsedPersons = []; // Nulstil
+                // Kun nulstil puljen, hvis det IKKE er en bonus quiz
+                if (currentDifficulty !== 'bonus') {
+                    console.log("Person-puljen er ved at være tom til relationelt spørgsmål. Nulstiller puljen.");
+                    sessionUsedPersons = []; // Nulstil
+                }
                 available = [...pool];
             }
             return shuffleArray(available).slice(0, count);
         }
 
+        /**
+         * 24-TIMERS LOGIK: Denne funktion er OPDATERET til at nulstille puljen automatisk.
+         * SUDDEN DEATH: Rettet til at bruge 'hard' settings.
+         */
         function generateRandomQuiz(difficulty) {
-            // GAMEFLOW-FORBEDRING: Sudden Death bruger 'hard' puljen
-            const setting = (difficulty === 'suddenDeath' || difficulty === 'bonus') ? difficulty : difficulty;
+            // BUG FIX: Sudden Death skal bruge 'hard' settings. 'bonus' skal bruge 'bonus'.
+            const setting = (difficulty === 'suddenDeath') ? 'hard' : difficulty;
             const allowedTypes = difficultySettings[setting];
+            // --- Slut på Bug Fix ---
 
             if (difficulty === 'suddenDeath') {
                 quizTitleEl.textContent = '⚡ Sudden Death Udfordring ⚡';
@@ -461,7 +474,7 @@
             
             let totalAvailable = (difficulty === 'easy') ? availablePlayers.length : availablePlayers.length + availableStab.length;
 
-            if (totalAvailable < 4) {
+            if (totalAvailable < 4 && difficulty !== 'bonus') {
                 console.log("Person-puljen er ved at være tom. Nulstiller puljen og fortsætter quizzen.");
                 sessionUsedPersons = []; // Nulstil puljen
                 
@@ -471,14 +484,15 @@
             }
 
             // GAMEFLOW-FORBEDRING: Sudden Death genererer 50 spørgsmål for en lang session
-            const numQuestions = (difficulty === 'suddenDeath') ? 50 : Math.min(10, totalAvailable);
+            // GAMEFLOW-FORBEDRING: Bonus genererer 3 (den klippes bagefter, men vi genererer kun 3)
+            const numQuestions = (difficulty === 'suddenDeath') ? 50 : (difficulty === 'bonus') ? 3 : Math.min(10, totalAvailable);
             
             const newQuestions = [];
             let quizPersons = [];
 
             while (newQuestions.length < numQuestions) {
                 if (totalAvailable === 0 || (difficulty === 'easy' && availablePlayers.length === 0) || 
-                    (difficulty !== 'easy' && availablePlayers.length === 0 && availableStab.length === 0)) break;
+                    (difficulty !== 'easy' && difficulty !== 'bonus' && availablePlayers.length === 0 && availableStab.length === 0)) break;
 
                 let questionData = null;
                 let questionType = allowedTypes[Math.floor(Math.random() * allowedTypes.length)];
@@ -504,7 +518,8 @@
                 switch(questionType) {
                     // ... (Cases 0-6 er uændrede) ...
                     case questionTypes.SPILLER_NR_TIL_NAVN: {
-                        correctPerson = shuffleArray(availablePlayers).find(p => !quizPersons.includes(p.navn));
+                        let pool = (difficulty === 'bonus') ? [...spillerDatabase] : availablePlayers; // Bonus ignorerer pulje
+                        correctPerson = shuffleArray(pool).find(p => !quizPersons.includes(p.navn));
                         if (!correctPerson) continue;
                         questionData = { question: `Hvem bærer rygnummer ${correctPerson.nummer}?`, correct: correctPerson.navn, rationale: `${correctPerson.navn} bærer korrekt nummer ${correctPerson.nummer}.` };
                         if (!isTextInput) {
@@ -514,7 +529,8 @@
                         break;
                     }
                     case questionTypes.SPILLER_NAVN_TIL_NR: {
-                        correctPerson = shuffleArray(availablePlayers).find(p => !quizPersons.includes(p.navn));
+                        let pool = (difficulty === 'bonus') ? [...spillerDatabase] : availablePlayers;
+                        correctPerson = shuffleArray(pool).find(p => !quizPersons.includes(p.navn));
                         if (!correctPerson) continue;
                         questionData = { question: `Hvilket rygnummer har ${correctPerson.navn}?`, correct: correctPerson.nummer.toString(), rationale: `${correctPerson.navn} bærer korrekt nummer ${correctPerson.nummer}.` };
                         if (!isTextInput) {
@@ -525,6 +541,7 @@
                     }
                     case questionTypes.PERSON_NAVN_TIL_POS: {
                         let pool = (difficulty === 'easy' || difficulty === 'bonus') ? availablePlayers : [...availablePlayers, ...availableStab];
+                        if (difficulty === 'bonus') pool = [...spillerDatabase];
                         correctPerson = shuffleArray(pool).find(p => !quizPersons.includes(p.navn));
                         if (!correctPerson) continue; 
                         const allPositions = [...new Set(personDatabase.map(p => p.position))];
@@ -534,6 +551,7 @@
                     }
                     case questionTypes.PERSON_NAVN_TIL_NAT: {
                         let pool = (difficulty === 'easy' || difficulty === 'bonus') ? availablePlayers : [...availablePlayers, ...availableStab];
+                        if (difficulty === 'bonus') pool = [...spillerDatabase];
                         correctPerson = shuffleArray(pool).find(p => !quizPersons.includes(p.navn));
                         if (!correctPerson) continue;
                         const allNats = [...new Set(personDatabase.map(p => p.nationalitet))];
@@ -761,6 +779,8 @@
             
             // GAMEFLOW-FORBEDRING: Sudden Death slutter her
             if (currentDifficulty === 'suddenDeath') {
+                feedbackTextEl.textContent = 'Tiden løb ud! Spillet er slut.';
+                feedbackTextEl.style.color = '#dc3545';
                 setTimeout(showResults, 1500);
                 return;
             }
@@ -848,12 +868,12 @@
             }
             
             // DESIGN-FORBEDRING: Opdater progress bar
-            if(currentDifficulty !== 'suddenDeath') {
+            if(currentDifficulty !== 'suddenDeath' && currentDifficulty !== 'bonus') {
                 const progressPercent = ((currentQuestionIndex) / questions.length) * 100;
                 progressBar.style.width = progressPercent + '%';
                 progressBarContainer.classList.remove('hidden');
             } else {
-                progressBarContainer.classList.add('hidden'); // Ingen progress bar i sudden death
+                progressBarContainer.classList.add('hidden'); // Ingen progress bar i sudden death / bonus
             }
 
             questionTextEl.innerHTML = currentQuestion.question; 
@@ -1005,6 +1025,7 @@
             highscoreResultEl.textContent = ''; 
             highscoreResultEl.classList.remove('text-green-600', 'font-semibold');
             
+            // GAMEFLOW-FORBEDRING: numQuestions for Sudden Death er bare 'score'
             const numQuestions = (currentDifficulty === 'suddenDeath') ? score : questions.length;
             let message = '';
             let unlockMessage = '';
@@ -1025,10 +1046,11 @@
                     highScoreMessage = " <strong>Ny Sudden Death Rekord!</strong>";
                     highscoreResultEl.textContent = `Ny rekord: ${score} i træk`;
                     highscoreResultEl.classList.add('text-green-600', 'font-semibold');
+                    if (score > 0) confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
                 } else {
                     highscoreResultEl.textContent = `Rekord: ${oldHighScore} i træk (${highScores.suddenDeath.name})`;
                 }
-                message = score > 15 ? "Imponerende!" : (score > 5 ? "Godt gået!" : "Bedre held næste gang!");
+                message = score > 15 ? "Imponerende!" : (score > 5 ? "Godt gået!" : (score > 0 ? "Okay forsøg!" : "Bedre held næste gang..."));
                 
             } else { // Normal quiz-logik (Easy, Normal, Hard)
                 restartNewQuizButton.textContent = 'Ny Quiz (Resterende Pulje)';
@@ -1136,7 +1158,10 @@
         function sendEmail() {
             const recipient = "tonnysenior@gmail.com";
             const subject = `FCK Quiz Resultat for ${playerName}`;
-            const body = `Hej,\n\Her er resultatet for ${playerName} i quizzen "${quizTitleEl.textContent}":\n\Score: ${score} ud af ${questions.length}\n\n${finalMessageEl.textContent}\n\nMvh\nQuizzen`;
+            // GAMEFLOW-FORBEDRING: Sudden Death mail-tekst
+            let scoreText = (currentDifficulty === 'suddenDeath') ? `Score: ${score} rigtige i træk` : `Score: ${score} ud af ${questions.length}`;
+            
+            const body = `Hej,\n\Her er resultatet for ${playerName} i quizzen "${quizTitleEl.textContent}":\n\n${scoreText}\n\n${finalMessageEl.textContent}\n\nMvh\nQuizzen`;
             const encodedSubject = encodeURIComponent(subject);
             const encodedBody = encodeURIComponent(body);
             const mailtoLink = `mailto:${recipient}?subject=${encodedSubject}&body=${encodedBody}`;
@@ -1153,11 +1178,8 @@
         backToStartButton.addEventListener('click', goBackToStart);
         restartSameQuizButton.addEventListener('click', restartSameQuiz);
         
-        restartNewQuizButton.addEventListener('click', () => {
-             // Sørg for at den genstarter sudden death, hvis det var der vi var
-            const difficulty = (currentDifficulty === 'suddenDeath') ? 'suddenDeath' : currentDifficulty;
-            generateRandomQuiz(difficulty);
-        });
+        // BUG FIX: Fjernet den globale listener, da .onclick sættes i showResults()
+        // restartNewQuizButton.addEventListener('click', () => { ... });
         
         continueToNextLevelButton.addEventListener('click', () => {
             const nextDifficulty = continueToNextLevelButton.dataset.nextLevel;

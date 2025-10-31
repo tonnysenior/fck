@@ -69,7 +69,9 @@
         <p class="text-xs text-gray-500 mt-3">
             Du skal klare et niveau med 100% rigtige for at låse op for det næste.<br>
             <strong>Tip:</strong> Feltet er "FCK Fan" som standard – ændr det hvis du vil!
-        </p>
+        </D>
+
+        <button id="reset-all-progress" class="text-xs text-red-600 underline mt-2">Nulstil alle fremskridt (Test)</button>
     </div>
 
     <div id="quiz-container" class="bg-white p-6 md:p-8 rounded-lg shadow-xl w-full max-w-xl text-center hidden">
@@ -161,6 +163,11 @@
         let timeLeft = 15;
         const TIMER_DURATION = 15;
 
+        // 24-TIMERS LOGIK: Nøgler og varighed
+        const HIGH_SCORE_KEY = 'fckQuizHighScores';
+        const QUIZ_PROGRESS_KEY = 'fckQuizProgress';
+        const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
+
         // === DOM ELEMENTER ===
         const startScreen = document.getElementById('start-screen');
         const quizContainer = document.getElementById('quiz-container');
@@ -201,7 +208,8 @@
         // === INITIALISERING ===
         window.addEventListener('load', () => {
             nameInput.value = playerName;
-            updateHighScoreDisplay(); 
+            // 24-TIMERS LOGIK: Erstatter den gamle 'updateHighScoreDisplay()' med en fuld status-tjek
+            checkQuizStatus(); 
         });
         
         // === HJÆLPEFUNKTIONER ===
@@ -236,7 +244,7 @@
         }
         
         // === HIGH SCORE FUNKTIONER ===
-        const HIGH_SCORE_KEY = 'fckQuizHighScores';
+        // (Disse er uændrede, men kaldes nu af 24-timers logikken)
         function getHighScores() {
             const scores = localStorage.getItem(HIGH_SCORE_KEY);
             const defaultScores = {
@@ -260,7 +268,103 @@
             hardHighscoreEl.textContent = `Rekord: ${highScores.hard.score} / ${highScores.hard.total}`;
         }
 
+        // === 24-TIMERS LOGIK: NYE FUNKTIONER ===
+        
+        /**
+         * Henter fremskridt (oplåste levels og udløbstid) fra localStorage.
+         */
+        function getQuizProgress() {
+            const progress = localStorage.getItem(QUIZ_PROGRESS_KEY);
+            try {
+                return progress ? JSON.parse(progress) : null;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        /**
+         * Gemmer fremskridt (oplåste levels og udløbstid) til localStorage.
+         */
+        function saveQuizProgress(progress) {
+            localStorage.setItem(QUIZ_PROGRESS_KEY, JSON.stringify(progress));
+        }
+
+        /**
+         * Opdaterer knapperne på startskærmen baseret på gemte oplåsninger.
+         * 'unlocks' er et array som ['easy', 'normal'] or null.
+         */
+        function updateUnlockUI(unlocks) {
+            const unlocked = unlocks || ['easy']; // Default til kun 'easy'
+
+            // Let (Altid oplåst, men teksten ændres)
+            startEasyButton.querySelector('.text-xs').innerHTML = unlocked.includes('normal') ? "Klaret!" : "Start her for at låse op";
+            
+            // Normal
+            if (unlocked.includes('normal')) {
+                startNormalButton.disabled = false;
+                startNormalButton.classList.remove('opacity-60', 'cursor-not-allowed');
+                startNormalButton.querySelector('.text-xl').innerHTML = "Normal ✔️";
+                startNormalButton.querySelector('.text-xs').innerHTML = unlocked.includes('hard') ? "Klaret!" : "Klar 'Normal' for at låse op";
+            } else {
+                startNormalButton.disabled = true;
+                startNormalButton.classList.add('opacity-60', 'cursor-not-allowed');
+                startNormalButton.querySelector('.text-xl').innerHTML = "Normal [Locked]";
+                startNormalButton.querySelector('.text-xs').innerHTML = "Klar 'Let' for at låse op";
+            }
+            
+            // Ekspert
+            if (unlocked.includes('hard')) {
+                startHardButton.disabled = false;
+                startHardButton.classList.remove('opacity-60', 'cursor-not-allowed');
+                startHardButton.querySelector('.text-xl').innerHTML = "Ekspert ✔️";
+                startHardButton.querySelector('.text-xs').innerHTML = "Mest Frit Svar (15s. timer)";
+            } else {
+                startHardButton.disabled = true;
+                startHardButton.classList.add('opacity-60', 'cursor-not-allowed');
+                startHardButton.querySelector('.text-xl').innerHTML = "Ekspert [Locked]";
+                startHardButton.querySelector('.text-xs').innerHTML = "Klar 'Normal' for at låse op";
+            }
+        }
+
+        /**
+         * KERNEN I 24-TIMERS LOGIKKEN.
+         * Kaldes ved load og tjekker, om en session er udløbet.
+         * Nulstiller alt, hvis tiden er gået.
+         */
+        function checkQuizStatus() {
+            const now = new Date().getTime();
+            let progress = getQuizProgress();
+            
+            if (progress && progress.expiresAt) {
+                if (now > progress.expiresAt) {
+                    // UDLØBET!
+                    alert("Dine 24 timers adgang er udløbet. Alle fremskridt og high scores er nulstillet.");
+                    localStorage.removeItem(QUIZ_PROGRESS_KEY);
+                    localStorage.removeItem(HIGH_SCORE_KEY); // Nulstil også high scores
+                    progress = null; // Sæt til null for UI-opdateringen
+                }
+            }
+            
+            // Opdater knapperne (låst/ulåst) baseret på fremskridt
+            updateUnlockUI(progress ? progress.unlocks : null);
+            
+            // Opdater high score-visningen (som nu vil være nulstillet, hvis udløbet)
+            updateHighScoreDisplay();
+        }
+        
+        /**
+         * 24-TIMERS LOGIK: Test-funktion til at nulstille alt.
+         */
+        function resetAllProgress() {
+            if (confirm("Er du sikker? Dette nulstiller ALLE dine high scores og låste levels.")) {
+                localStorage.removeItem(HIGH_SCORE_KEY);
+                localStorage.removeItem(QUIZ_PROGRESS_KEY);
+                location.reload();
+            }
+        }
+
         // === QUIZ GENERATOR ===
+        // (Denne sektion er uændret)
         const questionTypes = { SPILLER_NR_TIL_NAVN: 0, SPILLER_NAVN_TIL_NR: 1, PERSON_NAVN_TIL_POS: 2, PERSON_NAVN_TIL_NAT: 3, PERSON_NAVN_TIL_AAR: 4, STAB_POS_TIL_NAVN: 5, TÆL_NATIONALITET: 6 };
         
         const difficultySettings = {
@@ -297,7 +401,7 @@
                 let questionType = allowedTypes[Math.floor(Math.random() * allowedTypes.length)];
                 
                 const isTextInput = (difficulty === 'hard' && 
-                                    [questionTypes.SPILLER_NR_TIL_NAVN, questionTypes.SPILLER_NAVN_TIL_NR, questionTypes.PERSON_NAVN_TIL_AAR, questionTypes.TÆL_NATIONALITET].includes(questionType));
+                                     [questionTypes.SPILLER_NR_TIL_NAVN, questionTypes.SPILLER_NAVN_TIL_NR, questionTypes.PERSON_NAVN_TIL_AAR, questionTypes.TÆL_NATIONALITET].includes(questionType));
 
                 if ([questionTypes.SPILLER_NAVN_TIL_NR, questionTypes.SPILLER_NR_TIL_NAVN].includes(questionType) && availablePlayers.length === 0) { 
                     questionType = questionTypes.PERSON_NAVN_TIL_POS; 
@@ -469,7 +573,8 @@
              startScreen.classList.remove('hidden');
              nameInput.value = playerName; 
              sessionUsedPersons = [];
-             updateHighScoreDisplay();
+             // 24-TIMERS LOGIK: Opdateret til at køre fuld status-tjek
+             checkQuizStatus();
         }
         
         function restartSameQuiz() {
@@ -710,32 +815,65 @@
              }
             
             if (percentage === 100 && numQuestions > 0) {
+                
+                // 24-TIMERS LOGIK: Start timer og gem fremskridt
+                const now = new Date().getTime();
+                let progress = getQuizProgress();
+                
+                if (!progress) {
+                    // Første unlock i en 24-timers cyklus
+                    alert("Tillykke! Du har klaret dit første level. Din 24-timers adgang er nu startet.");
+                    progress = {
+                        unlocks: ['easy'], // 'easy' er teknisk set altid ulåst
+                        expiresAt: now + TWENTY_FOUR_HOURS_MS
+                    };
+                }
+
+                let newUnlock = null;
+                // ----- SLUT 24-TIMERS LOGIK -----
+
                 if (currentDifficulty === 'easy') {
-                    if (startNormalButton.disabled) { 
-                        startNormalButton.disabled = false;
-                        startNormalButton.classList.remove('opacity-60', 'cursor-not-allowed');
-                        startNormalButton.querySelector('.text-xl').innerHTML = "Normal ✔️";
-                        startEasyButton.querySelector('.text-xs').innerHTML = "Klaret!";
+                    // 24-TIMERS LOGIK: Tjek om 'normal' er ny, før den tilføjes
+                    if (!progress.unlocks.includes('normal')) { 
+                        newUnlock = 'normal';
                         unlockMessage = " <strong>Stærkt gået! 'Normal' er nu låst op.</strong>";
                     }
+                    // Opdater UI (sker uanset om det er nyt eller ej)
+                    startNormalButton.disabled = false;
+                    startNormalButton.classList.remove('opacity-60', 'cursor-not-allowed');
+                    startNormalButton.querySelector('.text-xl').innerHTML = "Normal ✔️";
+                    startEasyButton.querySelector('.text-xs').innerHTML = "Klaret!";
+                    
                     continueToNextLevelButton.innerHTML = "Start 'Normal' Nu";
                     continueToNextLevelButton.dataset.nextLevel = "normal";
                     continueToNextLevelButton.classList.remove('hidden');
+
                 } else if (currentDifficulty === 'normal') {
-                    if (startHardButton.disabled) { 
-                        startHardButton.disabled = false;
-                        startHardButton.classList.remove('opacity-60', 'cursor-not-allowed');
-                        startHardButton.querySelector('.text-xl').innerHTML = "Ekspert ✔️";
-                        startNormalButton.querySelector('.text-xs').innerHTML = "Klaret!";
+                    // 24-TIMERS LOGIK: Tjek om 'hard' er ny, før den tilføjes
+                    if (!progress.unlocks.includes('hard')) {
+                        newUnlock = 'hard';
                         unlockMessage = " <strong>Suverænt! Du er klar til 'Ekspert'-udfordringen.</strong>";
                     }
+                    // Opdater UI
+                    startHardButton.disabled = false;
+                    startHardButton.classList.remove('opacity-60', 'cursor-not-allowed');
+                    startHardButton.querySelector('.text-xl').innerHTML = "Ekspert ✔️";
+                    startNormalButton.querySelector('.text-xs').innerHTML = "Klaret!";
+                    
                     continueToNextLevelButton.innerHTML = "Prøv 'Ekspert' Nu (15s. timer)";
                     continueToNextLevelButton.dataset.nextLevel = "hard";
                     continueToNextLevelButton.classList.remove('hidden');
+
                 } else if (currentDifficulty === 'hard') {
                     if (!highScoreMessage) { 
                         unlockMessage = " <strong>Imponerende! Du er en ægte FCK-kender.</strong>";
                     }
+                }
+                
+                // 24-TIMERS LOGIK: Gem det nye fremskridt
+                if (newUnlock) {
+                    progress.unlocks.push(newUnlock);
+                    saveQuizProgress(progress);
                 }
             }
             
@@ -780,6 +918,9 @@
                 handleTextInputAnswer();
             }
         });
+        
+        // 24-TIMERS LOGIK: Event listener til den nye reset-knap
+        document.getElementById('reset-all-progress').addEventListener('click', resetAllProgress);
         
     </script>
 

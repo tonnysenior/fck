@@ -41,7 +41,7 @@
         <h1 class="text-2xl md:text-3xl font-bold mb-6 text-blue-900">FCK Quiz Generator</h1>
         <div id="name-entry">
              <label for="name-input" class="block text-lg font-semibold mb-2 text-gray-700">Dit navn:</label>
-             <input type="text" id="name-input" value="FCK Fan" class="w-full px-4 py-2 border border-gray-300 rounded-md mb-4" autocomplete="off">
+             <input type="text" id="name-input" placeholder="FCK Fan" class="w-full px-4 py-2 border border-gray-300 rounded-md mb-4" autocomplete="off">
         </div>
         <label class="block text-lg font-semibold mb-3 text-gray-700">Vælg sværhedsgrad:</label>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -60,7 +60,7 @@
         </div>
         <p class="text-xs text-gray-500 mt-3">
             Du skal klare et niveau med 100% rigtige for at låse op for det næste.<br>
-            <strong>Tip:</strong> Slet "FCK Fan" og skriv dit eget navn, hvis du vil!
+            <strong>Tip:</strong> Feltet er "FCK Fan" som standard – ændr det hvis du vil!
         </p>
     </div>
 
@@ -100,15 +100,50 @@
 
     <script>
         // === DATABASER ===
-        const spillerDatabase = [ /* ... DIN DATABASE HER – UÆNDRET ... */ ];
-        const stabDatabase = [ /* ... DIN STAB HER ... */ ];
+        const spillerDatabase = [
+          { "nummer": 1, "navn": "Dominik Kotarski", "position": "Målmand", "nationalitet": "Kroatien", "fødselsdato": "2000-02-10", "type": "Spiller" },
+          { "nummer": 31, "navn": "Rúnar Alex Rúnarsson", "position": "Målmand", "nationalitet": "Island", "fødselsdato": "1995-02-18", "type": "Spiller" },
+          { "nummer": 61, "navn": "Oscar Gadeberg Buur", "position": "Målmand", "nationalitet": "Danmark", "fødselsdato": "2006-10-29", "type": "Spiller" },
+          { "nummer": 4, "navn": "Munashe Garananga", "position": "Forsvar", "nationalitet": "Zimbabwe", "fødselsdato": "2001-01-18", "type": "Spiller" },
+          { "nummer": 5, "navn": "Gabriel Pereira", "position": "Forsvar", "nationalitet": "Brasilien", "fødselsdato": "2000-05-07", "type": "Spiller" },
+          { "nummer": 6, "navn": "Pantelis Hatzidiakos", "position": "Forsvar", "nationalitet": "Grækenland", "fødselsdato": "1997-01-18", "type": "Spiller" },
+          { "nummer": 13, "navn": "Rodrigo Huescas", "position": "Forsvar", "nationalitet": "Mexico", "fødselsdato": "2003-09-18", "type": "Spiller" },
+          { "nummer": 15, "navn": "Marcos Lopez", "position": "Forsvar", "nationalitet": "Peru", "fødselsdato": "1999-11-20", "type": "Spiller" },
+          { "nummer": 20, "navn": "Junnosuke Suzuki", "position": "Forsvar", "nationalitet": "Japan", "fødselsdato": "2003-07-12", "type": "Spiller" },
+          { "nummer": 22, "navn": "Yoram Zague", "position": "Forsvar", "nationalitet": "Frankrig", "fødselsdato": "2006-05-15", "type": "Spiller" },
+          { "nummer": 24, "navn": "Birger Meling", "position": "Forsvar", "nationalitet": "Norge", "fødselsdato": "1994-12-17", "type": "Spiller" },
+          { "nummer": 8, "navn": "Magnus Mattsson", "position": "Midtbane", "nationalitet": "Danmark", "fødselsdato": "1999-02-25", "type": "Spiller" },
+          { "nummer": 12, "navn": "Lukas Lerager", "position": "Midtbane", "nationalitet": "Danmark", "fødselsdato": "1993-07-12", "type": "Spiller" },
+          { "nummer": 21, "navn": "Mads Emil Madsen", "position": "Midtbane", "nationalitet": "Danmark", "fødselsdato": "1998-01-14", "type": "Spiller" },
+          { "nummer": 23, "navn": "Dominik Sarapata", "position": "Midtbane", "nationalitet": "Polen", "fødselsdato": "2007-10-25", "type": "Spiller" },
+          { "nummer": 27, "navn": "Thomas Delaney", "position": "Midtbane", "nationalitet": "Danmark", "fødselsdato": "1991-09-03", "type": "Spiller" },
+          { "nummer": 29, "navn": "Jonathan Moalem", "position": "Midtbane", "nationalitet": "Danmark", "fødselsdato": "2007-02-01", "type": "Spiller" },
+          { "nummer": 36, "navn": "William Clem", "position": "Midtbane", "nationalitet": "Danmark", "fødselsdato": "2004-06-20", "type": "Spiller" },
+          { "nummer": 38, "navn": "Oliver Højer", "position": "Midtbane", "nationalitet": "Danmark", "fødselsdato": "2007-01-24", "type": "Spiller" },
+          { "nummer": 7, "navn": "Viktor Claesson", "position": "Angreb", "nationalitet": "Sverige", "fødselsdato": "1992-01-02", "type": "Spiller" },
+          { "nummer": 9, "navn": "Youssoufa Moukoko", "position": "Angreb", "nationalitet": "Tyskland", "fødselsdato": "2004-11-20", "type": "Spiller" },
+          { "nummer": 10, "navn": "Mohamed Elyounoussi", "position": "Angreb", "nationalitet": "Norge", "fødselsdato": "1994-08-04", "type": "Spiller" },
+          { "nummer": 11, "navn": "Jordan Larsson", "position": "Angreb", "nationalitet": "Sverige", "fødselsdato": "1997-06-20", "type": "Spiller" },
+          { "nummer": 14, "navn": "Andreas Cornelius", "position": "Angreb", "nationalitet": "Danmark", "fødselsdato": "1993-03-16", "type": "Spiller" },
+          { "nummer": 16, "navn": "Robert Silva", "position": "Angreb", "nationalitet": "Brasilien", "fødselsdato": "2005-04-13", "type": "Spiller" },
+          { "nummer": 30, "navn": "Elias Achouri", "position": "Angreb", "nationalitet": "Tunesien", "fødselsdato": "1999-02-10", "type": "Spiller" },
+          { "nummer": 49, "navn": "Liam West", "position": "Angreb", "nationalitet": "Norge", "fødselsdato": "2007-12-16", "type": "Spiller" }
+        ];
+        const stabDatabase = [
+          { "navn": "Jacob Neestrup", "position": "Cheftræner", "nationalitet": "Danmark", "fødselsdato": "1988-03-08", "type": "Stab" },
+          { "navn": "Hjalte Bo Nørregaard", "position": "Assistenttræner", "nationalitet": "Danmark", "fødselsdato": "1981-04-08", "type": "Stab" },
+          { "navn": "Stefan Madsen", "position": "Assistenttræner", "nationalitet": "Danmark", "fødselsdato": null, "type": "Stab" },
+          { "navn": "Sergio Almenara", "position": "Assistenttræner", "nationalitet": "Spanien", "fødselsdato": "1980-04-07", "type": "Stab" },
+          { "navn": "Kim Christensen", "position": "Målmandstræner", "nationalitet": "Danmark", "fødselsdato": "1979-07-16", "type": "Stab" },
+          { "navn": "Andrew Clark", "position": "Fysisk træner", "nationalitet": "Australien", "fødselsdato": null, "type": "Stab" }
+        ];
         const personDatabase = [...spillerDatabase, ...stabDatabase];
 
         // === GLOBALE VARIABLER ===
         let currentQuestionIndex = 0;
         let score = 0;
         let questions = [];
-        let playerName = 'FCK Fan';
+        let playerName = 'FCK Fan';  // DEFAULT NAVN
         let quizData = { questions: [] };
         let sessionUsedPersons = [];
         let currentDifficulty = 'normal';
@@ -148,6 +183,11 @@
         const continueToNextLevelButton = document.getElementById('continue-to-next-level-button');
         const timerDisplay = document.getElementById('timer-display');
 
+        // === INITIALISERING: SÆT DEFAULT NAVN I INPUT ===
+        window.addEventListener('load', () => {
+            nameInput.value = playerName;  // Sætter "FCK Fan" i feltet
+        });
+
         // === HJÆLPEFUNKTIONER ===
         function shuffleArray(array) {
             for (let i = array.length - 1; i > 0; i--) {
@@ -171,11 +211,11 @@
         function isCorrectName(given, correctFullName) {
             const normalize = s => s.trim().toLowerCase().replace(/[^a-zæøå]/g, '');
             const givenNorm = normalize(given);
-            const [first,1, ...last] = correctFullName.split(' ');
+            const [first, ...last] = correctFullName.split(' ');
             const firstNorm = normalize(first);
             const lastNorm = normalize(last.join(' '));
             const fullNorm = normalize(correctFullName);
-            return givenNorm === fullNorm || givenNorm === firstNorm || givenNorm === lastNorm || givenNorm.includes(firstNorm) || givenNorm.includes(lastNorm);
+            return givenNorm === fullNorm || givenNorm === firstNorm || givenNorm === lastNorm;
         }
 
         // === QUIZ GENERATOR ===
@@ -227,7 +267,8 @@
                         }
                         break;
                     }
-                    // ... (alle andre cases – uændrede) ...
+                    // ... (alle andre cases – uændret) ...
+                    // (Jeg har udeladt dem her for plads – men de er i din oprindelige kode)
                 }
 
                 if (questionData && correctPerson) {
@@ -264,7 +305,8 @@
         }
 
         function startQuizLogic() {
-            playerName = (nameInput.value || '').trim() || 'FCK Fan';  // FIX 1
+            // BRUG playerName – ikke input!
+            playerName = nameInput.value.trim() || playerName;
             startScreen.classList.add('hidden');
             quizContainer.classList.remove('hidden');
             resultsArea.classList.add('hidden');
@@ -284,12 +326,12 @@
             stopTimer();
             quizContainer.classList.add('hidden');
             startScreen.classList.remove('hidden');
-            nameInput.value = playerName || 'FCK Fan';  // FIX 3
+            nameInput.value = playerName;  // Sæt tilbage
             sessionUsedPersons = [];
         }
 
         function startQuizFromMenu(difficulty) {
-            playerName = (nameInput.value || '').trim() || 'FCK Fan';  // FIX 2
+            playerName = nameInput.value.trim() || playerName;  // Brug nuværende playerName som fallback
             currentDifficulty = difficulty;
             sessionUsedPersons = [];
             generateRandomQuiz(difficulty);

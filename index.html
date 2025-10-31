@@ -8,6 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
+        /* ... (style-sektionen er uændret) ... */
         body { font-family: 'Inter', sans-serif; }
         .correct { background-color: #28a745 !important; color: white !important; }
         .incorrect { background-color: #dc3545 !important; color: white !important; }
@@ -59,6 +60,13 @@
                 <span class="block text-xs">Mest Frit Svar (15s. timer)</span>
             </button>
         </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4 text-xs text-gray-500 border-t pt-4">
+            <p id="easy-highscore-display">Rekord: 0 / 10</p>
+            <p id="normal-highscore-display">Rekord: 0 / 10</p>
+            <p id="hard-highscore-display">Rekord: 0 / 10</p>
+        </div>
+
         <p class="text-xs text-gray-500 mt-3">
             Du skal klare et niveau med 100% rigtige for at låse op for det næste.<br>
             <strong>Tip:</strong> Feltet er "FCK Fan" som standard – ændr det hvis du vil!
@@ -83,10 +91,13 @@
                 <button id="inline-next-button" class="mt-4 px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition hidden">Næste Spørgsmål</button>
             </div>
         </div>
+        
         <div id="results-area" class="hidden text-center">
             <h2 class="text-xl font-bold mb-4">Resultat for <span id="player-name" class="text-blue-700"></span></h2>
             <p id="score" class="text-lg mb-4"></p>
+            <p id="highscore-result-display" class="text-md mb-2 text-gray-600"></p>
             <p id="final-message" class="mb-6"></p>
+            
             <button id="continue-to-next-level-button" class="quiz-button w-full px-6 py-3 bg-green-600 text-white rounded-md hover:bg-green-700 font-semibold mt-4 hidden">
                 Fortsæt til Næste Niveau
             </button>
@@ -97,10 +108,11 @@
             <button id="email-button" class="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition mt-4 w-full">Send Resultat via E-mail</button>
             <button id="back-to-start-button" class="px-6 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition mt-2 w-full">Tilbage til Start</button>
         </div>
-    </div>
+        </div>
 
     <script>
         // === DATABASER ===
+        // ... (uændret) ...
         const spillerDatabase = [
           { "nummer": 1, "navn": "Dominik Kotarski", "position": "Målmand", "nationalitet": "Kroatien", "fødselsdato": "2000-02-10", "type": "Spiller" },
           { "nummer": 31, "navn": "Rúnar Alex Rúnarsson", "position": "Målmand", "nationalitet": "Island", "fødselsdato": "1995-02-18", "type": "Spiller" },
@@ -144,7 +156,7 @@
         let currentQuestionIndex = 0;
         let score = 0;
         let questions = [];
-        let playerName = 'FCK Fan'; // DEFAULT NAVN
+        let playerName = 'FCK Fan'; 
         let quizData = { questions: [] };
         let sessionUsedPersons = [];
         let currentDifficulty = 'normal';
@@ -183,21 +195,31 @@
         const submitTextAnswer = document.getElementById('submit-text-answer');
         const continueToNextLevelButton = document.getElementById('continue-to-next-level-button');
         const timerDisplay = document.getElementById('timer-display');
+        
+        // === START PÅ ÆNDRING 2: NYE DOM ELEMENTER TIL HIGH SCORE ===
+        const easyHighscoreEl = document.getElementById('easy-highscore-display');
+        const normalHighscoreEl = document.getElementById('normal-highscore-display');
+        const hardHighscoreEl = document.getElementById('hard-highscore-display');
+        // NYT ELEMENT PÅ RESULTATSIDEN
+        const highscoreResultEl = document.getElementById('highscore-result-display');
+        // === SLUT PÅ ÆNDRING 2 ===
 
-        // === INITIALISERING: SÆT DEFAULT NAVN I INPUT ===
+
+        // === INITIALISERING ===
         window.addEventListener('load', () => {
-            nameInput.value = playerName; // Sætter "FCK Fan" i feltet
+            nameInput.value = playerName;
+            updateHighScoreDisplay(); 
         });
-
+        
         // === HJÆLPEFUNKTIONER ===
+        // ... (uændret) ...
         function shuffleArray(array) {
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [array[i], array[j]] = [array[j], array[i]];
             }
-            return array;
+            return array; 
         }
-
         function getUniqueWrongOptions(sourceArray, correctValue, count) {
             const wrongOptions = new Set();
             const shuffledSource = shuffleArray([...sourceArray]);
@@ -207,46 +229,59 @@
             }
             return Array.from(wrongOptions);
         }
-
-        // === DIN NYE, SMARTE FUNKTION ===
         function isCorrectName(given, correctFullName) {
-            // Fjerner accenter (f.eks. Rúnar) og specialtegn
             const normalize = s => s.trim().toLowerCase()
                                 .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
                                 .replace(/[^a-z0-9æøå]/g, ''); 
-                                
             const givenNorm = normalize(given);
             if (givenNorm.length === 0) return false;
-            
-            // Sikkerhedstjek for 'correctFullName'
             if (!correctFullName) return false; 
-
             const nameParts = correctFullName.split(' ');
             const firstNorm = normalize(nameParts[0]);
             const lastNorm = normalize(nameParts[nameParts.length - 1]);
             const fullNorm = normalize(correctFullName);
-
             return givenNorm === fullNorm || givenNorm === firstNorm || givenNorm === lastNorm;
+        }
+        
+        // === HIGH SCORE FUNKTIONER ===
+        const HIGH_SCORE_KEY = 'fckQuizHighScores';
+        function getHighScores() {
+            const scores = localStorage.getItem(HIGH_SCORE_KEY);
+            const defaultScores = {
+                easy: { score: 0, total: 10 },
+                normal: { score: 0, total: 10 },
+                hard: { score: 0, total: 10 }
+            };
+            try {
+                return scores ? { ...defaultScores, ...JSON.parse(scores) } : defaultScores;
+            } catch (e) {
+                return defaultScores;
+            }
+        }
+        function saveHighScores(scores) {
+            localStorage.setItem(HIGH_SCORE_KEY, JSON.stringify(scores));
+        }
+        function updateHighScoreDisplay() {
+            const highScores = getHighScores();
+            easyHighscoreEl.textContent = `Rekord: ${highScores.easy.score} / ${highScores.easy.total}`;
+            normalHighscoreEl.textContent = `Rekord: ${highScores.normal.score} / ${highScores.normal.total}`;
+            hardHighscoreEl.textContent = `Rekord: ${highScores.hard.score} / ${highScores.hard.total}`;
         }
 
         // === QUIZ GENERATOR ===
+        // ... (uændret) ...
         const questionTypes = { SPILLER_NR_TIL_NAVN: 0, SPILLER_NAVN_TIL_NR: 1, PERSON_NAVN_TIL_POS: 2, PERSON_NAVN_TIL_NAT: 3, PERSON_NAVN_TIL_AAR: 4, STAB_POS_TIL_NAVN: 5, TÆL_NATIONALITET: 6 };
-        
-        // DIN OPDATEREDE 'EASY' SVÆRHEDSGRAD
         const difficultySettings = {
             easy: [ questionTypes.SPILLER_NR_TIL_NAVN, questionTypes.SPILLER_NAVN_TIL_NR, questionTypes.PERSON_NAVN_TIL_POS, questionTypes.PERSON_NAVN_TIL_NAT ],
             normal: [ questionTypes.SPILLER_NR_TIL_NAVN, questionTypes.SPILLER_NAVN_TIL_NR, questionTypes.PERSON_NAVN_TIL_POS, questionTypes.PERSON_NAVN_TIL_NAT, questionTypes.STAB_POS_TIL_NAVN ],
             hard: [ questionTypes.SPILLER_NR_TIL_NAVN, questionTypes.SPILLER_NAVN_TIL_NR, questionTypes.PERSON_NAVN_TIL_POS, questionTypes.PERSON_NAVN_TIL_NAT, questionTypes.PERSON_NAVN_TIL_AAR, questionTypes.STAB_POS_TIL_NAVN, questionTypes.TÆL_NATIONALITET ]
         };
-
         function generateRandomQuiz(difficulty) {
             const allowedTypes = difficultySettings[difficulty];
             quizTitleEl.textContent = `FCK Quiz (${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)})`;
             let availablePlayers = spillerDatabase.filter(p => !sessionUsedPersons.some(used => used.navn === p.navn));
             let availableStab = stabDatabase.filter(s => !sessionUsedPersons.some(used => used.navn === s.navn));
-            
             let totalAvailable = (difficulty === 'easy') ? availablePlayers.length : availablePlayers.length + availableStab.length;
-
             if (totalAvailable < 4) {
                 alert("Alle personer fra denne sværhedsgrads pulje er blevet brugt! Vi starter forfra.");
                 sessionUsedPersons = [];
@@ -254,31 +289,23 @@
                 availableStab = [...stabDatabase];
                 totalAvailable = (difficulty === 'easy') ? availablePlayers.length : availablePlayers.length + availableStab.length;
             }
-
             const numQuestions = Math.min(10, totalAvailable);
             const newQuestions = [];
             let quizPersons = [];
-
             while (newQuestions.length < numQuestions) {
                 if ((difficulty === 'easy' && availablePlayers.length === 0) || 
                     (difficulty !== 'easy' && availablePlayers.length === 0 && availableStab.length === 0)) break;
-
                 let questionData = null;
                 let questionType = allowedTypes[Math.floor(Math.random() * allowedTypes.length)];
-                
                 const isTextInput = (difficulty === 'hard' && 
                                     [questionTypes.SPILLER_NR_TIL_NAVN, questionTypes.SPILLER_NAVN_TIL_NR, questionTypes.PERSON_NAVN_TIL_AAR, questionTypes.TÆL_NATIONALITET].includes(questionType));
-
                 if ([questionTypes.SPILLER_NAVN_TIL_NR, questionTypes.SPILLER_NR_TIL_NAVN].includes(questionType) && availablePlayers.length === 0) { 
                     questionType = questionTypes.PERSON_NAVN_TIL_POS; 
                 }
                 if (difficulty !== 'easy' && questionType === questionTypes.STAB_POS_TIL_NAVN && availableStab.length === 0) { 
                     questionType = questionTypes.PERSON_NAVN_TIL_POS; 
                 }
-
                 let correctPerson = null;
-                
-                // === GENINDSAT HELE SWITCH-BLOKKEN ===
                 switch(questionType) {
                     case questionTypes.SPILLER_NR_TIL_NAVN: {
                         correctPerson = shuffleArray(availablePlayers).find(p => !quizPersons.includes(p.navn));
@@ -422,13 +449,12 @@
             loadQuestion();
         }
         
-        // === RETTELSE AF NAVNELOGIK ===
         function startQuizFromMenu(difficulty) {
             let name = nameInput.value.trim();
             if (!name) {
-                name = "FCK Fan"; // Hvis feltet er tomt, brug "FCK Fan"
+                name = "FCK Fan"; 
             }
-            playerName = name; // Opdater det globale navn
+            playerName = name; 
             
             currentDifficulty = difficulty;
             sessionUsedPersons = [];
@@ -439,8 +465,9 @@
              stopTimer();
              quizContainer.classList.add('hidden');
              startScreen.classList.remove('hidden');
-             nameInput.value = playerName; // Sæt feltet til det sidst brugte navn
+             nameInput.value = playerName; 
              sessionUsedPersons = [];
+             updateHighScoreDisplay(); // OPDATER REKORDER
         }
         
         function restartSameQuiz() {
@@ -582,7 +609,6 @@
             inlineFeedbackArea.classList.remove('hidden');
         }
 
-        // === KOBLET DIN NYE FUNKTION PÅ ===
         function handleTextInputAnswer() {
             if (quizInProgress) return;
             quizInProgress = true;
@@ -594,12 +620,9 @@
             const givenAnswer = textAnswerInput.value;
             let isCorrect = false;
 
-            // Tjek hvilken type spørgsmål det er
             if (currentQuestion.questionType === questionTypes.SPILLER_NR_TIL_NAVN) {
-                // Brug din fleksible navne-funktion
                 isCorrect = isCorrectName(givenAnswer, currentQuestion.fullName); 
             } else {
-                // Brug standard-tjek (til numre, årstal, tælling)
                 isCorrect = (givenAnswer.trim().toLowerCase() === currentQuestion.correctAnswer.toLowerCase());
             }
 
@@ -622,6 +645,7 @@
             inlineFeedbackArea.classList.remove('hidden');
         }
 
+        // === START PÅ ÆNDRING 4: OPDATERET showResults (HIGH SCORE) ===
         function showResults() {
             quizInProgress = false; 
             stopTimer();
@@ -630,29 +654,53 @@
             playerNameEl.textContent = playerName;
             
             continueToNextLevelButton.classList.add('hidden');
-            if (questions.length === 0) {
+            highscoreResultEl.textContent = ''; // Nulstil high score display
+            highscoreResultEl.classList.remove('text-green-600', 'font-semibold');
+            
+            const numQuestions = questions.length;
+            let message = '';
+            let unlockMessage = '';
+            let highScoreMessage = '';
+
+            if (numQuestions === 0) {
                 scoreEl.textContent = "Der opstod en fejl (0 spørgsmål).";
                 restartSameQuizButton.classList.add('hidden');
             } else {
-                scoreEl.textContent = `Du fik ${score} ud af ${questions.length} rigtige!`;
-                if (score === questions.length) {
+                scoreEl.textContent = `Du fik ${score} ud af ${numQuestions} rigtige!`;
+                if (score === numQuestions) {
                     restartSameQuizButton.classList.add('hidden');
                 } else {
                     restartSameQuizButton.classList.remove('hidden');
                 }
+
+                // 1. High Score Logic
+                const highScores = getHighScores();
+                const oldHighScore = highScores[currentDifficulty].score;
+                
+                if (score > oldHighScore) {
+                    highScores[currentDifficulty] = { score: score, total: numQuestions };
+                    saveHighScores(highScores);
+                    highScoreMessage = " <strong>Ny Rekord!</strong>";
+                    highscoreResultEl.textContent = `Ny rekord: ${score} / ${numQuestions}`;
+                    highscoreResultEl.classList.add('text-green-600', 'font-semibold');
+                } else if (score === oldHighScore && oldHighScore > 0) { // Vis kun tangering hvis rekorden er > 0
+                    highscoreResultEl.textContent = `Rekord: ${oldHighScore} / ${numQuestions} (Tangering!)`;
+                } else {
+                    highscoreResultEl.textContent = `Rekord: ${oldHighScore} / ${numQuestions}`;
+                }
             }
             
-            let message = '';
-            const percentage = questions.length > 0 ? (score / questions.length) * 100 : 0;
+            const percentage = numQuestions > 0 ? (score / numQuestions) * 100 : 0;
             
+             // 2. Primary Message Logic
              if (percentage === 100) {
                  message = 'Perfekt score!';
              } else if (percentage >= 70) {
-                const mangler = questions.length - score;
+                const mangler = numQuestions - score;
                 const plural = mangler === 1 ? "rigtigt svar" : "rigtige svar";
                 
-                if ((currentDifficulty === 'easy' || currentDifficulty === 'normal') && questions.length > 0) {
-                    message = `Flot! Du mangler kun ${mangler} ${plural} for at låse op for næste niveau.`;
+                if ((currentDifficulty === 'easy' || currentDifficulty === 'normal') && numQuestions > 0) {
+                    message = `Flot! Du mangler kun ${mangler} ${plural} for at låse op.`;
                 } else {
                     message = 'Flot resultat! Du har godt styr på tingene.';
                 }
@@ -662,14 +710,15 @@
                  message = 'Øv! Det kræver vist lidt mere øvelse.';
              }
             
-            if (percentage === 100 && questions.length > 0) {
+            // 3. Unlock Logic
+            if (percentage === 100 && numQuestions > 0) {
                 if (currentDifficulty === 'easy') {
                     if (startNormalButton.disabled) { 
                         startNormalButton.disabled = false;
                         startNormalButton.classList.remove('opacity-60', 'cursor-not-allowed');
                         startNormalButton.querySelector('.text-xl').innerHTML = "Normal ✔️";
                         startEasyButton.querySelector('.text-xs').innerHTML = "Klaret!";
-                        message += " <strong>Stærkt gået! 'Normal' er nu låst op.</strong>";
+                        unlockMessage = " <strong>Stærkt gået! 'Normal' er nu låst op.</strong>";
                     }
                     continueToNextLevelButton.innerHTML = "Start 'Normal' Nu";
                     continueToNextLevelButton.dataset.nextLevel = "normal";
@@ -680,18 +729,23 @@
                         startHardButton.classList.remove('opacity-60', 'cursor-not-allowed');
                         startHardButton.querySelector('.text-xl').innerHTML = "Ekspert ✔️";
                         startNormalButton.querySelector('.text-xs').innerHTML = "Klaret!";
-                        message += " <strong>Suverænt! Du er klar til 'Ekspert'-udfordringen.</strong>";
+                        unlockMessage = " <strong>Suverænt! Du er klar til 'Ekspert'-udfordringen.</strong>";
                     }
                     continueToNextLevelButton.innerHTML = "Prøv 'Ekspert' Nu (15s. timer)";
                     continueToNextLevelButton.dataset.nextLevel = "hard";
                     continueToNextLevelButton.classList.remove('hidden');
                 } else if (currentDifficulty === 'hard') {
-                    message += " <strong>Imponerende! Du har gennemført den sværeste quiz! Du er en ægte FCK-kender.</strong>";
+                    if (!highScoreMessage) { // Tilføj kun denne ros, hvis de ikke fik ny rekord
+                        unlockMessage = " <strong>Imponerende! Du er en ægte FCK-kender.</strong>";
+                    }
                 }
             }
-            finalMessageEl.innerHTML = message;
+            
+            // 4. Combine messages
+            finalMessageEl.innerHTML = message + unlockMessage + highScoreMessage;
             emailButton.onclick = sendEmail;
         }
+        // === SLUT PÅ ÆNDRING 4 ===
 
         function sendEmail() {
             const recipient = "tonnysenior@gmail.com";

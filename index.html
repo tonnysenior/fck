@@ -144,7 +144,7 @@
         let currentQuestionIndex = 0;
         let score = 0;
         let questions = [];
-        let playerName = ''; // RETTELSE: Start tom
+        let playerName = 'FCK Fan'; // DEFAULT NAVN
         let quizData = { questions: [] };
         let sessionUsedPersons = [];
         let currentDifficulty = 'normal';
@@ -184,9 +184,11 @@
         const continueToNextLevelButton = document.getElementById('continue-to-next-level-button');
         const timerDisplay = document.getElementById('timer-display');
 
-        // === INITIALISERING ===
-        // Vi fjerner 'window.onload', da placeholderen håndterer standardteksten.
-        
+        // === INITIALISERING: SÆT DEFAULT NAVN I INPUT ===
+        window.addEventListener('load', () => {
+            nameInput.value = playerName; // Sætter "FCK Fan" i feltet
+        });
+
         // === HJÆLPEFUNKTIONER ===
         function shuffleArray(array) {
             for (let i = array.length - 1; i > 0; i--) {
@@ -215,6 +217,9 @@
                                 
             const givenNorm = normalize(given);
             if (givenNorm.length === 0) return false;
+            
+            // Sikkerhedstjek for 'correctFullName'
+            if (!correctFullName) return false; 
 
             const nameParts = correctFullName.split(' ');
             const firstNorm = normalize(nameParts[0]);
@@ -305,7 +310,7 @@
                         break;
                     }
                     case questionTypes.PERSON_NAVN_TIL_NAT: {
-                        let pool = (difficulty === 'easy') ? availablePlayers : [...availablePlayers, ...availableStab]; // OPDATERET 'Easy'
+                        let pool = (difficulty === 'easy') ? availablePlayers : [...availablePlayers, ...availableStab];
                         correctPerson = shuffleArray(pool).find(p => !quizPersons.includes(p.navn));
                         if (!correctPerson) continue;
                         const allNats = [...new Set(personDatabase.map(p => p.nationalitet))];
@@ -364,7 +369,6 @@
                     }
                 }
                 
-                // SIKKERHEDSTJEK for at undgå fejl
                 if (questionData && (correctPerson || questionData.correct)) {
                     if (isTextInput) {
                         newQuestions.push({
@@ -374,7 +378,6 @@
                             correctAnswer: questionData.correct,
                             rationale: questionData.rationale,
                             questionType: questionType,
-                            // Send det fulde navn med til `isCorrectName` funktionen, HVIS det er et navn-spørgsmål
                             fullName: (questionType === questionTypes.SPILLER_NR_TIL_NAVN) ? correctPerson.navn : null 
                         });
                     } else {
@@ -388,7 +391,6 @@
                             isTextInput: false
                         });
                     }
-                    // Opdater kun puljer, HVIS vi har brugt en person
                     if (correctPerson) {
                         quizPersons.push(correctPerson.navn);
                         sessionUsedPersons.push(correctPerson);
@@ -404,8 +406,7 @@
 
         // === KERNELOGIK FOR QUIZ ===
         function startQuizLogic() {
-            // Denne funktion er nu rettet til at bruge den globale 'playerName'
-            if (!playerName) return; // Skulle ikke ske pga. startQuizFromMenu
+            if (!playerName) return;
             startScreen.classList.add('hidden');
             quizContainer.classList.remove('hidden');
             resultsArea.classList.add('hidden');
@@ -421,7 +422,7 @@
             loadQuestion();
         }
         
-        // RETTELSE AF NAVNELOGIK
+        // === RETTELSE AF NAVNELOGIK ===
         function startQuizFromMenu(difficulty) {
             let name = nameInput.value.trim();
             if (!name) {
@@ -434,7 +435,6 @@
             generateRandomQuiz(difficulty);
         }
 
-        // RETTELSE AF NAVNELOGIK
         function goBackToStart() {
              stopTimer();
              quizContainer.classList.add('hidden');

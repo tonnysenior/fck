@@ -69,7 +69,7 @@
         <p class="text-xs text-gray-500 mt-3">
             Du skal klare et niveau med 100% rigtige for at låse op for det næste.<br>
             <strong>Tip:</strong> Feltet er "FCK Fan" som standard – ændr det hvis du vil!
-        </D>
+        </p>
 
         <button id="reset-all-progress" class="text-xs text-red-600 underline mt-2">Nulstil alle fremskridt (Test)</button>
     </div>
@@ -156,7 +156,7 @@
         let questions = [];
         let playerName = 'FCK Fan'; // DEFAULT NAVN
         let quizData = { questions: [] };
-        let sessionUsedPersons = [];
+        let sessionUsedPersons = []; // 24-TIMERS LOGIK: Denne styres nu af localStorage
         let currentDifficulty = 'normal';
         let quizInProgress = false;
         let timerInterval = null;
@@ -345,6 +345,13 @@
                 }
             }
             
+            // 24-TIMERS LOGIK: Indlæs brugte personer fra session, ellers start med en tom liste.
+            if (progress && progress.usedPersons) {
+                sessionUsedPersons = progress.usedPersons;
+            } else {
+                sessionUsedPersons = [];
+            }
+            
             // Opdater knapperne (låst/ulåst) baseret på fremskridt
             updateUnlockUI(progress ? progress.unlocks : null);
             
@@ -364,7 +371,6 @@
         }
 
         // === QUIZ GENERATOR ===
-        // (Denne sektion er uændret)
         const questionTypes = { SPILLER_NR_TIL_NAVN: 0, SPILLER_NAVN_TIL_NR: 1, PERSON_NAVN_TIL_POS: 2, PERSON_NAVN_TIL_NAT: 3, PERSON_NAVN_TIL_AAR: 4, STAB_POS_TIL_NAVN: 5, TÆL_NATIONALITET: 6 };
         
         const difficultySettings = {
@@ -373,21 +379,32 @@
             hard: [ questionTypes.SPILLER_NR_TIL_NAVN, questionTypes.SPILLER_NAVN_TIL_NR, questionTypes.PERSON_NAVN_TIL_POS, questionTypes.PERSON_NAVN_TIL_NAT, questionTypes.PERSON_NAVN_TIL_AAR, questionTypes.STAB_POS_TIL_NAVN, questionTypes.TÆL_NATIONALITET ]
         };
 
+        /**
+         * 24-TIMERS LOGIK: Denne funktion er OPDATERET til at nulstille puljen automatisk.
+         */
         function generateRandomQuiz(difficulty) {
             const allowedTypes = difficultySettings[difficulty];
             quizTitleEl.textContent = `FCK Quiz (${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)})`;
+            
+            // Tjek først hvor mange der er tilgængelige
             let availablePlayers = spillerDatabase.filter(p => !sessionUsedPersons.some(used => used.navn === p.navn));
             let availableStab = stabDatabase.filter(s => !sessionUsedPersons.some(used => used.navn === s.navn));
             
             let totalAvailable = (difficulty === 'easy') ? availablePlayers.length : availablePlayers.length + availableStab.length;
 
+            // 24-TIMERS LOGIK (ÆNDRING):
+            // Hvis puljen er for lille (f.eks. < 4 til at lave svarmuligheder),
+            // nulstiller vi 'sessionUsedPersons' UDEN en alert og genberegner puljerne.
             if (totalAvailable < 4) {
-                alert("Alle personer fra denne sværhedsgrads pulje er blevet brugt! Vi starter forfra.");
-                sessionUsedPersons = [];
+                console.log("Person-puljen er ved at være tom. Nulstiller puljen og fortsætter quizzen.");
+                sessionUsedPersons = []; // Nulstil puljen
+                
+                // Genberegn puljerne baseret på den nu tomme liste
                 availablePlayers = [...spillerDatabase];
                 availableStab = [...stabDatabase];
                 totalAvailable = (difficulty === 'easy') ? availablePlayers.length : availablePlayers.length + availableStab.length;
             }
+            // --- Slut på ændring ---
 
             const numQuestions = Math.min(10, totalAvailable);
             const newQuestions = [];
@@ -533,6 +550,14 @@
                 }
             } // Slut på while-løkke
             quizData = { questions: newQuestions };
+
+            // 24-TIMERS LOGIK: Gem den opdaterede 'sessionUsedPersons'-liste
+            let progress = getQuizProgress(); 
+            if (progress) {
+                progress.usedPersons = sessionUsedPersons; 
+                saveQuizProgress(progress);
+            }
+            
             startQuizLogic();
         }
 
@@ -555,6 +580,10 @@
             loadQuestion();
         }
         
+        /**
+         * 24-TIMERS LOGIK: Opdateret til at starte timer (hvis nødvendigt)
+         * og IKKE nulstille sessionUsedPersons
+         */
         function startQuizFromMenu(difficulty) {
             let name = nameInput.value.trim();
             if (!name) {
@@ -563,18 +592,37 @@
             playerName = name; 
             
             currentDifficulty = difficulty;
-            sessionUsedPersons = [];
+            // sessionUsedPersons = []; // FJERNET - puljen er nu vedvarende
+
+            // 24-TIMERS LOGIK: Start 24-timers sessionen, HVIS den ikke allerede kører.
+            let progress = getQuizProgress();
+            const now = new Date().getTime();
+            if (!progress) {
+                // Dette er den ALLERFØRSTE quiz i en 24-timers cyklus.
+                alert("Quizzen er startet! Du har nu 24 timer til at klare alle levels, før din fremgang nulstilles.");
+                progress = {
+                    unlocks: ['easy'], // 'easy' er default
+                    expiresAt: now + TWENTY_FOUR_HOURS_MS,
+                    usedPersons: [] // Start med en tom liste
+                };
+                saveQuizProgress(progress);
+                sessionUsedPersons = []; // Sørg for at den globale variabel også er tom
+            }
+            
             generateRandomQuiz(difficulty);
         }
 
+        /**
+         * 24-TIMERS LOGIK: Opdateret til IKKE at nulstille sessionUsedPersons
+         */
         function goBackToStart() {
              stopTimer();
              quizContainer.classList.add('hidden');
              startScreen.classList.remove('hidden');
              nameInput.value = playerName; 
-             sessionUsedPersons = [];
-             // 24-TIMERS LOGIK: Opdateret til at køre fuld status-tjek
-             checkQuizStatus();
+             // sessionUsedPersons = []; // FJERNET - puljen er nu vedvarende
+             
+             checkQuizStatus(); // Kører et fuldt tjek, som genindlæser 'sessionUsedPersons'
         }
         
         function restartSameQuiz() {
@@ -752,6 +800,10 @@
             inlineFeedbackArea.classList.remove('hidden');
         }
 
+        /**
+         * 24-TIMERS LOGIK: Opdateret til KUN at håndtere oplåsning.
+         * Timer-start er flyttet til 'startQuizFromMenu'.
+         */
         function showResults() {
             quizInProgress = false; 
             stopTimer();
@@ -816,22 +868,17 @@
             
             if (percentage === 100 && numQuestions > 0) {
                 
-                // 24-TIMERS LOGIK: Start timer og gem fremskridt
-                const now = new Date().getTime();
+                // 24-TIMERS LOGIK (ÆNDRET): Hent bare fremskridt. Timeren er allerede startet.
                 let progress = getQuizProgress();
-                
                 if (!progress) {
-                    // Første unlock i en 24-timers cyklus
-                    alert("Tillykke! Du har klaret dit første level. Din 24-timers adgang er nu startet.");
-                    progress = {
-                        unlocks: ['easy'], // 'easy' er teknisk set altid ulåst
-                        expiresAt: now + TWENTY_FOUR_HOURS_MS
-                    };
+                    // Nødløsning, hvis noget er gået galt (timeren burde være startet i 'startQuizFromMenu')
+                    console.error("Progress-objekt mangler! Skulle have været oprettet ved quiz-start.");
+                    progress = { unlocks: ['easy'], usedPersons: sessionUsedPersons };
                 }
+                // --- Slut på ændring ---
 
                 let newUnlock = null;
-                // ----- SLUT 24-TIMERS LOGIK -----
-
+                
                 if (currentDifficulty === 'easy') {
                     // 24-TIMERS LOGIK: Tjek om 'normal' er ny, før den tilføjes
                     if (!progress.unlocks.includes('normal')) { 

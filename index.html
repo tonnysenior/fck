@@ -35,8 +35,6 @@
         #timer-display {
             transition: color 0.3s ease-in-out;
         }
-        
-        /* DESIGN-FORBEDRING: Styles til Progress Bar og Timer Bar */
         #progress-bar-container {
             width: 100%;
             background-color: #e5e7eb; /* gray-200 */
@@ -63,7 +61,6 @@
             height: 100%;
             width: 100%;
             background-color: #ef4444; /* red-500 */
-            /* Transition sættes af JS */
         }
     </style>
 </head>
@@ -83,15 +80,15 @@
             </button>
             <button id="start-normal-quiz" class="quiz-button w-full px-4 py-3 bg-blue-600 text-white rounded-md opacity-60 cursor-not-allowed" disabled>
                 <span class="block text-xl">Normal [Locked]</span>
-                <span class="block text-xs">Klar 'Let' for at låse op</span>
+                <span class="block text-xs">Klar 'Let' med 100%</span>
             </button>
             <button id="start-hard-quiz" class="quiz-button w-full px-4 py-3 bg-red-600 text-white rounded-md opacity-60 cursor-not-allowed" disabled>
                 <span class="block text-xl">Ekspert [Locked]</span>
-                <span class="block text-xs">Mest Frit Svar (15s. timer)</span>
+                <span class="block text-xs">Klar 'Normal' med 90%</span>
             </button>
-            <button id="start-sudden-death-quiz" class="quiz-button w-full px-4 py-3 bg-gray-800 text-white rounded-md hover:bg-gray-900 font-semibold hidden md:col-span-2">
-                <span class="block text-xl">⚡ Sudden Death ⚡</span>
-                <span class="block text-xs">Spil til du svarer forkert én gang!</span>
+            <button id="start-straffespark-quiz" class="quiz-button w-full px-4 py-3 bg-gray-800 text-white rounded-md hover:bg-gray-900 font-semibold hidden md:col-span-2">
+                <span class="block text-xl">⚡ Straffespark ⚡</span>
+                <span class="block text-xs">Låst op! Spil til du svarer forkert.</span>
             </button>
         </div>
         
@@ -100,12 +97,12 @@
             <p id="normal-highscore-display">Rekord: 0 / 10 (-)</p>
             <p id="hard-highscore-display">Rekord: 0 / 10 (-)</p>
         </div>
-        <p id="sudden-death-highscore-display" class="text-xs text-gray-500 mt-2">Sudden Death Rekord: 0 (-)</p>
+        <p id="straffespark-highscore-display" class="text-xs text-gray-500 mt-2">Straffespark Rekord: 0 (-)</p>
 
         <p class="text-xs text-gray-500 mt-3">
-            Du skal klare et niveau med <strong>80% rigtige</strong> for at låse op for det næste.<br>
+            Du skal klare 'Let' med **100%** og 'Normal' med **90%** for at låse op.<br>
             <strong>Tip:</strong> Feltet er "FCK Fan" som standard – ændr det hvis du vil!
-        </D>
+        </p>
 
         <button id="reset-all-progress" class="text-xs text-red-600 underline mt-2">Nulstil alle fremskridt (Test)</button>
     </div>
@@ -202,7 +199,7 @@
         let questions = [];
         let playerName = 'FCK Fan'; // DEFAULT NAVN
         let quizData = { questions: [] };
-        let sessionUsedPersons = []; // 24-TIMERS LOGIK: Denne styres nu af localStorage
+        let sessionUsedPersons = []; 
         let currentDifficulty = 'normal';
         let quizInProgress = false;
         let timerInterval = null;
@@ -221,7 +218,8 @@
         const startEasyButton = document.getElementById('start-easy-quiz');
         const startNormalButton = document.getElementById('start-normal-quiz');
         const startHardButton = document.getElementById('start-hard-quiz');
-        const startSuddenDeathButton = document.getElementById('start-sudden-death-quiz'); // NY KNAP
+        // ÆNDRING: Variabelnavn opdateret
+        const startStraffesparkButton = document.getElementById('start-straffespark-quiz'); 
         const quizTitleEl = document.getElementById('quiz-title');
         const questionArea = document.getElementById('question-area');
         const resultsArea = document.getElementById('results-area');
@@ -246,7 +244,6 @@
         const continueToNextLevelButton = document.getElementById('continue-to-next-level-button');
         const timerDisplay = document.getElementById('timer-display');
         
-        // DESIGN-FORBEDRING: Nye DOM elementer til bars
         const progressBarContainer = document.getElementById('progress-bar-container');
         const progressBar = document.getElementById('progress-bar');
         const timerBarContainer = document.getElementById('timer-bar-container');
@@ -255,7 +252,8 @@
         const easyHighscoreEl = document.getElementById('easy-highscore-display');
         const normalHighscoreEl = document.getElementById('normal-highscore-display');
         const hardHighscoreEl = document.getElementById('hard-highscore-display');
-        const suddenDeathHighscoreEl = document.getElementById('sudden-death-highscore-display');
+        // ÆNDRING: Variabelnavn opdateret
+        const straffesparkHighscoreEl = document.getElementById('straffespark-highscore-display');
         const highscoreResultEl = document.getElementById('highscore-result-display');
 
 
@@ -298,14 +296,14 @@
         
         // === HIGH SCORE FUNKTIONER ===
         
-        // DESIGN-FORBEDRING: Opdateret til at gemme navn og Sudden Death score
+        // ÆNDRING: Opdateret til 'straffespark'
         function getHighScores() {
             const scores = localStorage.getItem(HIGH_SCORE_KEY);
             const defaultScores = {
                 easy: { score: 0, total: 10, name: '-' },
                 normal: { score: 0, total: 10, name: '-' },
                 hard: { score: 0, total: 10, name: '-' },
-                suddenDeath: { score: 0, total: 0, name: '-' } // 'total' bruges ikke her
+                straffespark: { score: 0, total: 0, name: '-' } // 'total' bruges ikke her
             };
             try {
                 return scores ? { ...defaultScores, ...JSON.parse(scores) } : defaultScores;
@@ -316,12 +314,13 @@
         function saveHighScores(scores) {
             localStorage.setItem(HIGH_SCORE_KEY, JSON.stringify(scores));
         }
+        // ÆNDRING: Opdateret til 'straffespark'
         function updateHighScoreDisplay() {
             const highScores = getHighScores();
             easyHighscoreEl.textContent = `Rekord: ${highScores.easy.score} / ${highScores.easy.total} (${highScores.easy.name})`;
             normalHighscoreEl.textContent = `Rekord: ${highScores.normal.score} / ${highScores.normal.total} (${highScores.normal.name})`;
             hardHighscoreEl.textContent = `Rekord: ${highScores.hard.score} / ${highScores.hard.total} (${highScores.hard.name})`;
-            suddenDeathHighscoreEl.textContent = `Sudden Death Rekord: ${highScores.suddenDeath.score} (${highScores.suddenDeath.name})`;
+            straffesparkHighscoreEl.textContent = `Straffespark Rekord: ${highScores.straffespark.score} (${highScores.straffespark.name})`;
         }
 
         // === 24-TIMERS LOGIK OG GAMEFLOW ===
@@ -338,7 +337,7 @@
             localStorage.setItem(QUIZ_PROGRESS_KEY, JSON.stringify(progress));
         }
 
-        // GAMEFLOW-FORBEDRING: Opdateret til at vise Sudden Death knappen
+        // ÆNDRING: Opdateret til 'straffespark' og 90%
         function updateUnlockUI(unlocks) {
             const unlocked = unlocks || ['easy']; 
 
@@ -348,32 +347,29 @@
                 startNormalButton.disabled = false;
                 startNormalButton.classList.remove('opacity-60', 'cursor-not-allowed');
                 startNormalButton.querySelector('.text-xl').innerHTML = "Normal ✔️";
-                startNormalButton.querySelector('.text-xs').innerHTML = unlocked.includes('hard') ? "Klaret!" : "Klar 'Normal' for at låse op";
+                startNormalButton.querySelector('.text-xs').innerHTML = unlocked.includes('hard') ? "Klaret!" : "Klar 'Normal' med 90%";
             } else {
                 startNormalButton.disabled = true;
                 startNormalButton.classList.add('opacity-60', 'cursor-not-allowed');
                 startNormalButton.querySelector('.text-xl').innerHTML = "Normal [Locked]";
-                startNormalButton.querySelector('.text-xs').innerHTML = "Klar 'Let' for at låse op";
+                startNormalButton.querySelector('.text-xs').innerHTML = "Klar 'Let' med 100%";
             }
             
-            if (unlocked.includes('hard')) {
+            if (unlocked.includes('hard')) { // 'hard' og 'straffespark' låses op samtidigt
                 startHardButton.disabled = false;
                 startHardButton.classList.remove('opacity-60', 'cursor-not-allowed');
                 startHardButton.querySelector('.text-xl').innerHTML = "Ekspert ✔️";
                 startHardButton.querySelector('.text-xs').innerHTML = "Mest Frit Svar (15s. timer)";
-                // Vis Sudden Death
-                startSuddenDeathButton.classList.remove('hidden');
+                startStraffesparkButton.classList.remove('hidden');
             } else {
                 startHardButton.disabled = true;
                 startHardButton.classList.add('opacity-60', 'cursor-not-allowed');
                 startHardButton.querySelector('.text-xl').innerHTML = "Ekspert [Locked]";
-                startHardButton.querySelector('.text-xs').innerHTML = "Klar 'Normal' for at låse op";
-                // Skjul Sudden Death
-                startSuddenDeathButton.classList.add('hidden');
+                startHardButton.querySelector('.text-xs').innerHTML = "Klar 'Normal' med 90%";
+                startStraffesparkButton.classList.add('hidden');
             }
         }
 
-        // GAMEFLOW-FORBEDRING: Logik for "Bonus Quiz" ved udløb
         function checkQuizStatus() {
             const now = new Date().getTime();
             let progress = getQuizProgress();
@@ -384,9 +380,8 @@
                     localStorage.removeItem(HIGH_SCORE_KEY);
                     if (confirm("Dine 24 timers adgang er udløbet! Alle fremskridt og high scores er nulstillet.\n\nVil du tage en 'Bonus Quiz' (3 spørgsmål) for at låse 'Normal' op igen?")) {
                         startBonusQuiz();
-                        return; // Stop eksekvering, bonus quizzen tager over
+                        return; 
                     } else {
-                        // Brugeren afviste bonus quiz
                         progress = null; 
                     }
                 }
@@ -402,17 +397,14 @@
             updateHighScoreDisplay();
         }
 
-        // GAMEFLOW-FORBEDRING: Ny funktion til at køre bonus quizzen
         function startBonusQuiz() {
             let name = nameInput.value.trim();
             if (!name) name = "FCK Fan"; 
             playerName = name; 
             
             currentDifficulty = 'bonus';
-            sessionUsedPersons = []; // Bonus quiz påvirker ikke din rigtige pulje
-            generateRandomQuiz('bonus'); // Generer en 'bonus' quiz
-            questions = questions.slice(0, 3); // Klip den til 3 spørgsmål
-            quizData.questions = questions; // Opdater quizData
+            sessionUsedPersons = []; 
+            generateRandomQuiz('bonus'); 
             quizTitleEl.textContent = "Bonus Quiz (Lås 'Normal' op)";
             startQuizLogic();
         }
@@ -427,45 +419,35 @@
 
         // === QUIZ GENERATOR ===
         
-        // NYE SPØRGSMÅL: Tilføjet relationelle typer
         const questionTypes = { SPILLER_NR_TIL_NAVN: 0, SPILLER_NAVN_TIL_NR: 1, PERSON_NAVN_TIL_POS: 2, PERSON_NAVN_TIL_NAT: 3, PERSON_NAVN_TIL_AAR: 4, STAB_POS_TIL_NAVN: 5, TÆL_NATIONALITET: 6, REL_YNGSTE: 7, REL_IKKE_SKANDINAVIEN: 8, REL_IKKE_POSITION: 9 };
         
         const difficultySettings = {
             easy: [ questionTypes.SPILLER_NR_TIL_NAVN, questionTypes.SPILLER_NAVN_TIL_NR, questionTypes.PERSON_NAVN_TIL_POS, questionTypes.PERSON_NAVN_TIL_NAT ],
-            // NYE SPØRGSMÅL: Tilføjet til puljerne
             normal: [ questionTypes.SPILLER_NR_TIL_NAVN, questionTypes.SPILLER_NAVN_TIL_NR, questionTypes.PERSON_NAVN_TIL_POS, questionTypes.PERSON_NAVN_TIL_NAT, questionTypes.STAB_POS_TIL_NAVN, questionTypes.REL_YNGSTE, questionTypes.REL_IKKE_POSITION ],
             hard: [ questionTypes.SPILLER_NR_TIL_NAVN, questionTypes.SPILLER_NAVN_TIL_NR, questionTypes.PERSON_NAVN_TIL_POS, questionTypes.PERSON_NAVN_TIL_NAT, questionTypes.PERSON_NAVN_TIL_AAR, questionTypes.STAB_POS_TIL_NAVN, questionTypes.TÆL_NATIONALITET, questionTypes.REL_YNGSTE, questionTypes.REL_IKKE_SKANDINAVIEN, questionTypes.REL_IKKE_POSITION ],
-            bonus: [ questionTypes.SPILLER_NR_TIL_NAVN, questionTypes.PERSON_NAVN_TIL_POS, questionTypes.PERSON_NAVN_TIL_NAT ] // Simpel pulje til bonus
+            bonus: [ questionTypes.SPILLER_NR_TIL_NAVN, questionTypes.PERSON_NAVN_TIL_POS, questionTypes.PERSON_NAVN_TIL_NAT ]
         };
 
-        // NYE SPØRGSMÅL: Helper til at hente 4 unikke personer
         function getMultipleUniquePersons(count, pool) {
             let available = pool.filter(p => !sessionUsedPersons.some(used => used.navn === p.navn));
-            // Hvis puljen er for lille, genstart den
             if (available.length < count) {
-                // Kun nulstil puljen, hvis det IKKE er en bonus quiz
                 if (currentDifficulty !== 'bonus') {
                     console.log("Person-puljen er ved at være tom til relationelt spørgsmål. Nulstiller puljen.");
-                    sessionUsedPersons = []; // Nulstil
+                    sessionUsedPersons = []; 
                 }
                 available = [...pool];
             }
             return shuffleArray(available).slice(0, count);
         }
 
-        /**
-         * 24-TIMERS LOGIK: Denne funktion er OPDATERET til at nulstille puljen automatisk.
-         * SUDDEN DEATH: Rettet til at bruge 'hard' settings.
-         */
         function generateRandomQuiz(difficulty) {
-            // BUG FIX: Sudden Death skal bruge 'hard' settings. 'bonus' skal bruge 'bonus'.
-            const setting = (difficulty === 'suddenDeath') ? 'hard' : difficulty;
+            // ÆNDRING: 'straffespark' bruger 'hard' settings
+            const setting = (difficulty === 'straffespark') ? 'hard' : difficulty;
             const allowedTypes = difficultySettings[setting];
-            // --- Slut på Bug Fix ---
 
-            if (difficulty === 'suddenDeath') {
-                quizTitleEl.textContent = '⚡ Sudden Death Udfordring ⚡';
-            } else if (difficulty !== 'bonus') { // Bonus har sin egen titel
+            if (difficulty === 'straffespark') {
+                quizTitleEl.textContent = '⚡ Straffespark ⚡';
+            } else if (difficulty !== 'bonus') { 
                 quizTitleEl.textContent = `FCK Quiz (${difficulty.charAt(0).toUpperCase() + difficulty.slice(1)})`;
             }
             
@@ -476,16 +458,15 @@
 
             if (totalAvailable < 4 && difficulty !== 'bonus') {
                 console.log("Person-puljen er ved at være tom. Nulstiller puljen og fortsætter quizzen.");
-                sessionUsedPersons = []; // Nulstil puljen
+                sessionUsedPersons = []; 
                 
                 availablePlayers = [...spillerDatabase];
                 availableStab = [...stabDatabase];
                 totalAvailable = (difficulty === 'easy') ? availablePlayers.length : availablePlayers.length + availableStab.length;
             }
 
-            // GAMEFLOW-FORBEDRING: Sudden Death genererer 50 spørgsmål for en lang session
-            // GAMEFLOW-FORBEDRING: Bonus genererer 3 (den klippes bagefter, men vi genererer kun 3)
-            const numQuestions = (difficulty === 'suddenDeath') ? 50 : (difficulty === 'bonus') ? 3 : Math.min(10, totalAvailable);
+            // ÆNDRING: 'straffespark' genererer 50 spørgsmål
+            const numQuestions = (difficulty === 'straffespark') ? 50 : (difficulty === 'bonus') ? 3 : Math.min(10, totalAvailable);
             
             const newQuestions = [];
             let quizPersons = [];
@@ -497,28 +478,26 @@
                 let questionData = null;
                 let questionType = allowedTypes[Math.floor(Math.random() * allowedTypes.length)];
                 
-                const isTextInput = (difficulty === 'hard' || difficulty === 'suddenDeath') && 
+                // ÆNDRING: 'straffespark' er text input
+                const isTextInput = (difficulty === 'hard' || difficulty === 'straffespark') && 
                                      [questionTypes.SPILLER_NR_TIL_NAVN, questionTypes.SPILLER_NAVN_TIL_NR, questionTypes.PERSON_NAVN_TIL_AAR, questionTypes.TÆL_NATIONALITET].includes(questionType);
 
-                // Logik til at undgå fejl hvis en pulje er tom
                 if ([questionTypes.SPILLER_NAVN_TIL_NR, questionTypes.SPILLER_NR_TIL_NAVN].includes(questionType) && availablePlayers.length === 0) { 
                     questionType = questionTypes.PERSON_NAVN_TIL_POS; 
                 }
                 if (difficulty !== 'easy' && questionType === questionTypes.STAB_POS_TIL_NAVN && availableStab.length === 0) { 
                     questionType = questionTypes.PERSON_NAVN_TIL_POS; 
                 }
-                // NYE SPØRGSMÅL: Sørg for at vi har nok spillere til relationelle spørgsmål
                 if ([questionTypes.REL_YNGSTE, questionTypes.REL_IKKE_SKANDINAVIEN, questionTypes.REL_IKKE_POSITION].includes(questionType) && availablePlayers.length < 4) {
-                    continue; // Prøv en anden type
+                    continue; 
                 }
 
 
                 let correctPerson = null;
                 
                 switch(questionType) {
-                    // ... (Cases 0-6 er uændrede) ...
                     case questionTypes.SPILLER_NR_TIL_NAVN: {
-                        let pool = (difficulty === 'bonus') ? [...spillerDatabase] : availablePlayers; // Bonus ignorerer pulje
+                        let pool = (difficulty === 'bonus') ? [...spillerDatabase] : availablePlayers; 
                         correctPerson = shuffleArray(pool).find(p => !quizPersons.includes(p.navn));
                         if (!correctPerson) continue;
                         questionData = { question: `Hvem bærer rygnummer ${correctPerson.nummer}?`, correct: correctPerson.navn, rationale: `${correctPerson.navn} bærer korrekt nummer ${correctPerson.nummer}.` };
@@ -608,7 +587,6 @@
                         }
                         break;
                     }
-                    // NYE SPØRGSMÅL: Cases for relationelle typer
                     case questionTypes.REL_YNGSTE: {
                         const pool = [...availablePlayers].filter(p => p.fødselsdato);
                         if (pool.length < 4) continue;
@@ -628,7 +606,7 @@
                         const pos = positions[Math.floor(Math.random() * positions.length)];
                         const poolCorrect = availablePlayers.filter(p => p.position === pos);
                         const poolWrong = availablePlayers.filter(p => p.position !== pos && p.position !== "Målmand");
-                        if (poolCorrect.length < 3 || poolWrong.length < 1) continue; // Ikke nok data
+                        if (poolCorrect.length < 3 || poolWrong.length < 1) continue; 
 
                         const correctPeople = getMultipleUniquePersons(3, poolCorrect);
                         correctPerson = getMultipleUniquePersons(1, poolWrong)[0];
@@ -682,7 +660,7 @@
                             isTextInput: false
                         });
                     }
-                    if (correctPerson && difficulty !== 'bonus') { // Gem ikke brugte personer fra bonus quiz
+                    if (correctPerson && difficulty !== 'bonus') { 
                         quizPersons.push(correctPerson.navn);
                         sessionUsedPersons.push(correctPerson);
                         availablePlayers = availablePlayers.filter(p => p.navn !== correctPerson.navn);
@@ -692,7 +670,6 @@
             } // Slut på while-løkke
             quizData = { questions: newQuestions };
 
-            // Gem kun puljen hvis det IKKE er en bonus quiz
             if (difficulty !== 'bonus') {
                 let progress = getQuizProgress(); 
                 if (progress) {
@@ -732,11 +709,9 @@
             
             currentDifficulty = difficulty;
             
-            // Start 24-timers sessionen, HVIS den ikke allerede kører
             let progress = getQuizProgress();
             const now = new Date().getTime();
             if (!progress) {
-                // Første quiz i en 24-timers cyklus
                 alert("Quizzen er startet! Du har nu 24 timer til at klare alle levels, før din fremgang nulstilles.");
                 progress = {
                     unlocks: ['easy'],
@@ -765,9 +740,8 @@
         function stopTimer() {
             clearInterval(timerInterval);
             timerDisplay.classList.add('hidden');
-            // DESIGN-FORBEDRING: Skjul timer-bar
             timerBarContainer.classList.add('hidden');
-            timerBar.style.transition = 'none'; // Stop anim
+            timerBar.style.transition = 'none'; 
         }
 
         function handleTimeUp() {
@@ -777,8 +751,8 @@
             submitTextAnswer.disabled = true;
             answerOptionsEl.querySelectorAll('button').forEach(b => b.disabled = true);
             
-            // GAMEFLOW-FORBEDRING: Sudden Death slutter her
-            if (currentDifficulty === 'suddenDeath') {
+            // ÆNDRING: 'straffespark'
+            if (currentDifficulty === 'straffespark') {
                 feedbackTextEl.textContent = 'Tiden løb ud! Spillet er slut.';
                 feedbackTextEl.style.color = '#dc3545';
                 setTimeout(showResults, 1500);
@@ -813,11 +787,10 @@
             timerDisplay.classList.remove('text-red-600'); 
             clearInterval(timerInterval);
             
-            // DESIGN-FORBEDRING: Start timer-bar
             timerBarContainer.classList.remove('hidden');
-            timerBar.style.transition = 'none'; // Nulstil
+            timerBar.style.transition = 'none'; 
             timerBar.style.width = '100%';
-            // Kickstart animationen
+            
             setTimeout(() => {
                 timerBar.style.transition = `width ${TIMER_DURATION}s linear`;
                 timerBar.style.width = '0%';
@@ -841,7 +814,6 @@
             if (currentQuestionIndex < questions.length) {
                 loadQuestion();
             } else {
-                // GAMEFLOW-FORBEDRING: Sudden Death slutter når spørgsmål er brugt op
                 showResults();
             }
         }
@@ -860,20 +832,19 @@
             }
             const currentQuestion = questions[currentQuestionIndex];
             
-            // GAMEFLOW-FORBEDRING: Opdateret tæller for Sudden Death
-            if (currentDifficulty === 'suddenDeath') {
-                 questionNumberEl.textContent = `Spørgsmål ${currentQuestionIndex + 1} (Rekord: ${getHighScores().suddenDeath.score})`;
+            // ÆNDRING: 'straffespark'
+            if (currentDifficulty === 'straffespark') {
+                 questionNumberEl.textContent = `Straffespark ${currentQuestionIndex + 1} (Rekord: ${getHighScores().straffespark.score})`;
             } else {
                  questionNumberEl.textContent = `Spørgsmål ${currentQuestionIndex + 1} af ${questions.length}`;
             }
             
-            // DESIGN-FORBEDRING: Opdater progress bar
-            if(currentDifficulty !== 'suddenDeath' && currentDifficulty !== 'bonus') {
+            if(currentDifficulty !== 'straffespark' && currentDifficulty !== 'bonus') {
                 const progressPercent = ((currentQuestionIndex) / questions.length) * 100;
                 progressBar.style.width = progressPercent + '%';
                 progressBarContainer.classList.remove('hidden');
             } else {
-                progressBarContainer.classList.add('hidden'); // Ingen progress bar i sudden death / bonus
+                progressBarContainer.classList.add('hidden'); 
             }
 
             questionTextEl.innerHTML = currentQuestion.question; 
@@ -900,7 +871,7 @@
                     answerOptionsEl.appendChild(button);
                 });
             }
-            if (currentDifficulty === 'hard' || currentDifficulty === 'suddenDeath') {
+            if (currentDifficulty === 'hard' || currentDifficulty === 'straffespark') {
                 startTimer();
             }
         }
@@ -925,11 +896,11 @@
                 score++;
                 feedbackTextEl.innerHTML = 'Korrekt! ✔️';
                 feedbackTextEl.style.color = '#28a745';
-                const delay = (currentDifficulty === 'suddenDeath') ? 1500 : 3000;
+                const delay = (currentDifficulty === 'straffespark') ? 1500 : 3000;
                 setTimeout(loadNextOrShowResults, delay);
             } else {
-                // GAMEFLOW-FORBEDRING: Sudden Death slutter ved forkert svar
-                if (currentDifficulty === 'suddenDeath') {
+                // ÆNDRING: 'straffespark'
+                if (currentDifficulty === 'straffespark') {
                     feedbackTextEl.textContent = 'Forkert! Spillet er slut.';
                     feedbackTextEl.style.color = '#dc3545';
                     setTimeout(showResults, 2000);
@@ -967,15 +938,15 @@
                 feedbackTextEl.innerHTML = 'Korrekt! ✔️';
                 feedbackTextEl.style.color = '#28a745';
                 rationale = currentQuestion.rationale;
-                const delay = (currentDifficulty === 'suddenDeath') ? 1500 : 3000;
+                const delay = (currentDifficulty === 'straffespark') ? 1500 : 3000;
                 setTimeout(loadNextOrShowResults, delay);
             } else {
                 rationale = `Det korrekte svar er <strong>${currentQuestion.correctAnswer}</strong>. ${currentQuestion.rationale}`;
-                // GAMEFLOW-FORBEDRING: Sudden Death slutter ved forkert svar
-                if (currentDifficulty === 'suddenDeath') {
+                // ÆNDRING: 'straffespark'
+                if (currentDifficulty === 'straffespark') {
                     feedbackTextEl.textContent = 'Forkert! Spillet er slut.';
                     feedbackTextEl.style.color = '#dc3545';
-                    setTimeout(showResults, 2500); // Lidt længere tid til at læse svaret
+                    setTimeout(showResults, 2500); 
                 } else {
                     feedbackTextEl.textContent = 'Forkert!';
                     feedbackTextEl.style.color = '#dc3545';
@@ -988,8 +959,7 @@
         }
 
         /**
-         * 24-TIMERS LOGIK: Opdateret til KUN at håndtere oplåsning.
-         * Timer-start er flyttet til 'startQuizFromMenu'.
+         * ÆNDRING: Oplåsningskrav er 100% (Let) og 90% (Normal).
          */
         function showResults() {
             quizInProgress = false; 
@@ -998,61 +968,57 @@
             resultsArea.classList.remove('hidden');
             playerNameEl.textContent = playerName;
             
-            // DESIGN-FORBEDRING: Skjul progress bar på resultatsiden
             progressBarContainer.classList.add('hidden');
             
-            // GAMEFLOW-FORBEDRING: Håndter Bonus Quiz Først
             if (currentDifficulty === 'bonus') {
                 const bonusPercentage = (questions.length > 0 ? (score / questions.length) * 100 : 0);
                 if (bonusPercentage >= 66) { // 2 ud af 3
                     alert("Tillykke! Du bestod. 'Normal' er nu låst op for din nye 24-timers session.");
-                    // Opret en NY 24-timers session med 'Normal' låst op
                     const now = new Date().getTime();
                     const newProgress = {
-                        unlocks: ['easy', 'normal'], // Lås op!
+                        unlocks: ['easy', 'normal'], 
                         expiresAt: now + TWENTY_FOUR_HOURS_MS,
-                        usedPersons: [] // Start med tom pulje
+                        usedPersons: [] 
                     };
                     saveQuizProgress(newProgress);
                 } else {
                     alert("Desværre, du bestod ikke. Du må starte fra 'Let' for at låse op.");
                 }
-                goBackToStart(); // Gå altid tilbage til start efter bonus
-                return; // Stop videre eksekvering
+                goBackToStart(); 
+                return; 
             }
 
             continueToNextLevelButton.classList.add('hidden');
             highscoreResultEl.textContent = ''; 
             highscoreResultEl.classList.remove('text-green-600', 'font-semibold');
             
-            // GAMEFLOW-FORBEDRING: numQuestions for Sudden Death er bare 'score'
-            const numQuestions = (currentDifficulty === 'suddenDeath') ? score : questions.length;
+            const numQuestions = (currentDifficulty === 'straffespark') ? score : questions.length;
             let message = '';
             let unlockMessage = '';
             let highScoreMessage = '';
 
-            // GAMEFLOW-FORBEDRING: Særskilt logik for Sudden Death
-            if (currentDifficulty === 'suddenDeath') {
+            // ÆNDRING: 'straffespark'
+            if (currentDifficulty === 'straffespark') {
                 scoreEl.textContent = `Du fik ${score} rigtige i træk!`;
-                restartSameQuizButton.classList.add('hidden'); // Giver ikke mening
-                restartNewQuizButton.textContent = 'Prøv Sudden Death Igen';
-                restartNewQuizButton.onclick = () => startQuizFromMenu('suddenDeath');
+                restartSameQuizButton.classList.add('hidden'); 
+                restartNewQuizButton.textContent = 'Prøv Straffespark Igen';
+                restartNewQuizButton.onclick = () => startQuizFromMenu('straffespark');
                 
                 const highScores = getHighScores();
-                const oldHighScore = highScores.suddenDeath.score;
+                const oldHighScore = highScores.straffespark.score;
                 if (score > oldHighScore) {
-                    highScores.suddenDeath = { score: score, total: 0, name: playerName };
+                    highScores.straffespark = { score: score, total: 0, name: playerName };
                     saveHighScores(highScores);
-                    highScoreMessage = " <strong>Ny Sudden Death Rekord!</strong>";
+                    highScoreMessage = " <strong>Ny Straffespark Rekord!</strong>";
                     highscoreResultEl.textContent = `Ny rekord: ${score} i træk`;
                     highscoreResultEl.classList.add('text-green-600', 'font-semibold');
                     if (score > 0) confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
                 } else {
-                    highscoreResultEl.textContent = `Rekord: ${oldHighScore} i træk (${highScores.suddenDeath.name})`;
+                    highscoreResultEl.textContent = `Rekord: ${oldHighScore} i træk (${highScores.straffespark.name})`;
                 }
                 message = score > 15 ? "Imponerende!" : (score > 5 ? "Godt gået!" : (score > 0 ? "Okay forsøg!" : "Bedre held næste gang..."));
                 
-            } else { // Normal quiz-logik (Easy, Normal, Hard)
+            } else { 
                 restartNewQuizButton.textContent = 'Ny Quiz (Resterende Pulje)';
                 restartNewQuizButton.onclick = () => generateRandomQuiz(currentDifficulty);
                 
@@ -1085,10 +1051,11 @@
                 
                 const percentage = numQuestions > 0 ? (score / numQuestions) * 100 : 0;
                 
-                 // GAMEFLOW-FORBEDRING: 80% for at låse op, 100% for confetti
                  if (percentage === 100) {
                      message = 'Perfekt score!';
-                     confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } }); // DESIGN-FORBEDRING
+                     confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } }); 
+                 } else if (percentage >= 90) {
+                    message = `Suverænt! (${percentage.toFixed(0)}%)`;
                  } else if (percentage >= 80) {
                     message = `Flot klaret! (${percentage.toFixed(0)}%)`;
                  } else if (percentage >= 40) {
@@ -1097,22 +1064,21 @@
                      message = 'Øv! Det kræver vist lidt mere øvelse.';
                  }
                 
-                // GAMEFLOW-FORBEDRING: Tjekker nu for >= 80%
-                if (percentage >= 80 && numQuestions > 0) {
-                    
-                    let progress = getQuizProgress();
-                    if (!progress) {
-                        console.error("Progress-objekt mangler!");
-                        progress = { unlocks: ['easy'], usedPersons: sessionUsedPersons };
-                    }
-                    let newUnlock = null;
-                    
-                    if (currentDifficulty === 'easy') {
+                // --- ÆNDRING: OPLÅSNINGSLOGIK OPDATERET ---
+                
+                let progress = getQuizProgress();
+                if (!progress) {
+                    console.error("Progress-objekt mangler!");
+                    progress = { unlocks: ['easy'], usedPersons: sessionUsedPersons };
+                }
+                let newUnlock = null;
+                
+                if (currentDifficulty === 'easy') {
+                    if (percentage === 100) { // <-- KRAV: 100%
                         if (!progress.unlocks.includes('normal')) { 
                             newUnlock = 'normal';
-                            unlockMessage = " <strong>Stærkt gået! 'Normal' er nu låst op.</strong>";
+                            unlockMessage = " <strong>Stærkt! 100%! 'Normal' er nu låst op.</strong>";
                         }
-                        // UI opdateres uanset hvad
                         startNormalButton.disabled = false;
                         startNormalButton.classList.remove('opacity-60', 'cursor-not-allowed');
                         startNormalButton.querySelector('.text-xl').innerHTML = "Normal ✔️";
@@ -1121,35 +1087,48 @@
                         continueToNextLevelButton.innerHTML = "Start 'Normal' Nu";
                         continueToNextLevelButton.dataset.nextLevel = "normal";
                         continueToNextLevelButton.classList.remove('hidden');
+                    } else if (percentage >= 80) { // Viser "næsten" besked
+                        unlockMessage = " <strong>Godt klaret! Du skal have 100% for at låse op.</strong>";
+                    }
 
-                    } else if (currentDifficulty === 'normal') {
+                } else if (currentDifficulty === 'normal') {
+                    if (percentage >= 90) { // <-- KRAV: 90%
                         if (!progress.unlocks.includes('hard')) {
-                            newUnlock = 'hard';
-                            unlockMessage = " <strong>Suverænt! Du er klar til 'Ekspert'-udfordringen.</strong>";
+                            newUnlock = 'hard'; // 'hard' og 'straffespark' låses op sammen
+                            unlockMessage = ` <strong>Suverænt! ${percentage.toFixed(0)}%! 'Ekspert' og 'Straffespark' er låst op.</strong>`;
                         }
-                        // UI opdateres uanset hvad
                         startHardButton.disabled = false;
                         startHardButton.classList.remove('opacity-60', 'cursor-not-allowed');
                         startHardButton.querySelector('.text-xl').innerHTML = "Ekspert ✔️";
                         startNormalButton.querySelector('.text-xs').innerHTML = "Klaret!";
-                        startSuddenDeathButton.classList.remove('hidden'); // Lås også op for Sudden Death
+                        startStraffesparkButton.classList.remove('hidden'); 
                         
                         continueToNextLevelButton.innerHTML = "Prøv 'Ekspert' Nu (15s. timer)";
                         continueToNextLevelButton.dataset.nextLevel = "hard";
                         continueToNextLevelButton.classList.remove('hidden');
-
-                    } else if (currentDifficulty === 'hard') {
-                        if (!highScoreMessage) { 
-                            unlockMessage = " <strong>Imponerende! Du er en ægte FCK-kender.</strong>";
-                        }
+                    } else if (percentage >= 80) { // Viser "næsten" besked
+                        unlockMessage = " <strong>Stærkt! Du skal have 90% for at låse op.</strong>";
                     }
-                    
-                    if (newUnlock) {
-                        progress.unlocks.push(newUnlock);
-                        saveQuizProgress(progress);
+
+                } else if (currentDifficulty === 'hard') {
+                    if (percentage >= 80) { // <-- KRAV: 80% for at bestå 'Ekspert'
+                        unlockMessage = " <strong>Imponerende! Du er en ægte FCK-kender.</strong>";
+                        // ÆNDRING: Knappen til Straffespark vises
+                        continueToNextLevelButton.innerHTML = "Prøv 'Straffespark' Nu ⚡";
+                        continueToNextLevelButton.dataset.nextLevel = "straffespark";
+                        continueToNextLevelButton.classList.remove('hidden');
                     }
                 }
-            } // Slut på 'else' for normal quiz
+                
+                if (newUnlock) {
+                    progress.unlocks.push(newUnlock);
+                    if (newUnlock === 'hard') {
+                        progress.unlocks.push('straffespark'); // Lås begge op
+                    }
+                    saveQuizProgress(progress);
+                }
+                // --- SLUT PÅ ÆNDRING ---
+            } 
             
             finalMessageEl.innerHTML = message + unlockMessage + highScoreMessage;
             emailButton.onclick = sendEmail;
@@ -1158,8 +1137,8 @@
         function sendEmail() {
             const recipient = "tonnysenior@gmail.com";
             const subject = `FCK Quiz Resultat for ${playerName}`;
-            // GAMEFLOW-FORBEDRING: Sudden Death mail-tekst
-            let scoreText = (currentDifficulty === 'suddenDeath') ? `Score: ${score} rigtige i træk` : `Score: ${score} ud af ${questions.length}`;
+            // ÆNDRING: 'straffespark'
+            let scoreText = (currentDifficulty === 'straffespark') ? `Score: ${score} rigtige i træk` : `Score: ${score} ud af ${questions.length}`;
             
             const body = `Hej,\n\Her er resultatet for ${playerName} i quizzen "${quizTitleEl.textContent}":\n\n${scoreText}\n\n${finalMessageEl.textContent}\n\nMvh\nQuizzen`;
             const encodedSubject = encodeURIComponent(subject);
@@ -1172,14 +1151,14 @@
         startEasyButton.addEventListener('click', () => startQuizFromMenu('easy'));
         startNormalButton.addEventListener('click', () => startQuizFromMenu('normal'));
         startHardButton.addEventListener('click', () => startQuizFromMenu('hard'));
-        startSuddenDeathButton.addEventListener('click', () => startQuizFromMenu('suddenDeath')); // NY
+        // ÆNDRING: 'straffespark'
+        startStraffesparkButton.addEventListener('click', () => startQuizFromMenu('straffespark')); 
         
         inlineNextButton.addEventListener('click', loadNextOrShowResults);
         backToStartButton.addEventListener('click', goBackToStart);
         restartSameQuizButton.addEventListener('click', restartSameQuiz);
         
-        // BUG FIX: Fjernet den globale listener, da .onclick sættes i showResults()
-        // restartNewQuizButton.addEventListener('click', () => { ... });
+        // Denne .onclick sættes nu i showResults()
         
         continueToNextLevelButton.addEventListener('click', () => {
             const nextDifficulty = continueToNextLevelButton.dataset.nextLevel;

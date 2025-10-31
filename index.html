@@ -40,8 +40,8 @@
     <div id="start-screen" class="bg-white p-6 md:p-8 rounded-lg shadow-xl w-full max-w-xl text-center">
         <h1 class="text-2xl md:text-3xl font-bold mb-6 text-blue-900">FCK Quiz Generator</h1>
         <div id="name-entry">
-             <label for="name-input" class="block text-lg font-semibold mb-2 text-gray-700">Indtast dit navn:</label>
-             <input type="text" id="name-input" placeholder="Dit navn..." class="w-full px-4 py-2 border border-gray-300 rounded-md mb-4" autocomplete="off">
+             <label for="name-input" class="block text-lg font-semibold mb-2 text-gray-700">Dit navn:</label>
+             <input type="text" id="name-input" value="FCK Fan" class="w-full px-4 py-2 border border-gray-300 rounded-md mb-4" autocomplete="off">
         </div>
         <label class="block text-lg font-semibold mb-3 text-gray-700">Vælg sværhedsgrad:</label>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -58,7 +58,10 @@
                 <span class="block text-xs">Mest Frit Svar (15s. timer)</span>
             </button>
         </div>
-        <p class="text-xs text-gray-500 mt-3">Du skal klare et niveau med 100% rigtige for at låse op for det næste.</p>
+        <p class="text-xs text-gray-500 mt-3">
+            Du skal klare et niveau med 100% rigtige for at låse op for det næste.<br>
+            <strong>Tip:</strong> Slet "FCK Fan" og skriv dit eget navn, hvis du vil!
+        </p>
     </div>
 
     <div id="quiz-container" class="bg-white p-6 md:p-8 rounded-lg shadow-xl w-full max-w-xl text-center hidden">
@@ -140,7 +143,7 @@
         let currentQuestionIndex = 0;
         let score = 0;
         let questions = [];
-        let playerName = '';
+        let playerName = 'FCK Fan';
         let quizData = { questions: [] };
         let sessionUsedPersons = [];
         let currentDifficulty = 'normal';
@@ -193,18 +196,30 @@
             const wrongOptions = new Set();
             const shuffledSource = shuffleArray([...sourceArray]);
             for (const item of shuffledSource) {
-                if (item !== correctValue) {
-                    wrongOptions.add(item);
-                }
+                if (item !== correctValue) wrongOptions.add(item);
                 if (wrongOptions.size >= count) break;
             }
             return Array.from(wrongOptions);
         }
 
+        // NY: Fleksibel navnesammenligning
+        function isCorrectName(given, correctFullName) {
+            const normalize = s => s.trim().toLowerCase().replace(/[^a-zæøå]/g, '');
+            const givenNorm = normalize(given);
+            const [first, ...last] = correctFullName.split(' ');
+            const firstNorm = normalize(first);
+            const lastNorm = normalize(last.join(' '));
+            const fullNorm = normalize(correctFullName);
+            return givenNorm === fullNorm || givenNorm === firstNorm || givenNorm === lastNorm || givenNorm.includes(firstNorm) || givenNorm.includes(lastNorm);
+        }
+
         // === QUIZ GENERATOR ===
-        const questionTypes = { SPILLER_NR_TIL_NAVN: 0, SPILLER_NAVN_TIL_NR: 1, PERSON_NAVN_TIL_POS: 2, PERSON_NAVN_TIL_NAT: 3, PERSON_NAVN_TIL_AAR: 4, STAB_POS_TIL_NAVN: 5, TÆL_NATIONALITET: 6 };
+        const questionTypes = { 
+            SPILLER_NR_TIL_NAVN: 0, SPILLER_NAVN_TIL_NR: 1, PERSON_NAVN_TIL_POS: 2, 
+            PERSON_NAVN_TIL_NAT: 3, PERSON_NAVN_TIL_AAR: 4, STAB_POS_TIL_NAVN: 5, TÆL_NATIONALITET: 6 
+        };
         const difficultySettings = {
-            easy: [ questionTypes.SPILLER_NR_TIL_NAVN, questionTypes.SPILLER_NAVN_TIL_NR, questionTypes.PERSON_NAVN_TIL_POS ],
+            easy: [ questionTypes.SPILLER_NR_TIL_NAVN, questionTypes.SPILLER_NAVN_TIL_NR, questionTypes.PERSON_NAVN_TIL_POS, questionTypes.PERSON_NAVN_TIL_NAT ],
             normal: [ questionTypes.SPILLER_NR_TIL_NAVN, questionTypes.SPILLER_NAVN_TIL_NR, questionTypes.PERSON_NAVN_TIL_POS, questionTypes.PERSON_NAVN_TIL_NAT, questionTypes.STAB_POS_TIL_NAVN ],
             hard: [ questionTypes.SPILLER_NR_TIL_NAVN, questionTypes.SPILLER_NAVN_TIL_NR, questionTypes.PERSON_NAVN_TIL_POS, questionTypes.PERSON_NAVN_TIL_NAT, questionTypes.PERSON_NAVN_TIL_AAR, questionTypes.STAB_POS_TIL_NAVN, questionTypes.TÆL_NATIONALITET ]
         };
@@ -227,25 +242,18 @@
             const numQuestions = Math.min(10, totalAvailable);
             const newQuestions = [];
             let quizPersons = [];
-            let questionTypeCounts = {};
 
             while (newQuestions.length < numQuestions) {
                 if ((difficulty === 'easy' && availablePlayers.length === 0) || 
-                    (difficulty !== 'easy' && availablePlayers.length === 0 && availableStab.length === 0)) {
-                    break;
-                }
+                    (difficulty !== 'easy' && availablePlayers.length === 0 && availableStab.length === 0)) break;
 
-                let questionType = allowedTypes[Math.floor(Math.random() * allowedTypes.length)];
+                const questionType = allowedTypes[Math.floor(Math.random() * allowedTypes.length)];
                 const isTextInput = (difficulty === 'hard' && 
                     [questionTypes.SPILLER_NR_TIL_NAVN, questionTypes.SPILLER_NAVN_TIL_NR, questionTypes.PERSON_NAVN_TIL_AAR, questionTypes.TÆL_NATIONALITET].includes(questionType));
 
                 let correctPerson = null;
                 let questionData = null;
 
-                // ... [spørgsmålsgenerering – uændret, men forkortet her for plads] ...
-                // (Koden er identisk med din – ingen ændringer nødvendige her)
-
-                // Eksempel på en case (resten er uændret):
                 switch(questionType) {
                     case questionTypes.SPILLER_NR_TIL_NAVN: {
                         correctPerson = shuffleArray(availablePlayers).find(p => !quizPersons.includes(p.navn));
@@ -257,17 +265,97 @@
                         }
                         break;
                     }
-                    // ... [alle andre cases er uændrede] ...
+                    case questionTypes.SPILLER_NAVN_TIL_NR: {
+                        correctPerson = shuffleArray(availablePlayers).find(p => !quizPersons.includes(p.navn));
+                        if (!correctPerson) continue;
+                        questionData = { question: `Hvilket rygnummer har ${correctPerson.navn}?`, correct: correctPerson.nummer.toString(), rationale: `${correctPerson.navn} bærer korrekt nummer ${correctPerson.nummer}.` };
+                        if (!isTextInput) {
+                            const wrongPlayers = personDatabase.filter(p => p.navn !== correctPerson.navn && p.type === 'Spiller');
+                            questionData.wrong = getUniqueWrongOptions(wrongPlayers.map(p => p.nummer.toString()), correctPerson.nummer.toString(), 3).map(num => ({ text: num, rationale: `Nummer ${num} tilhører ${personDatabase.find(p => p.nummer.toString() === num).navn}.` }));
+                        }
+                        break;
+                    }
+                    case questionTypes.PERSON_NAVN_TIL_POS: {
+                        const pool = difficulty === 'easy' ? availablePlayers : [...availablePlayers, ...availableStab];
+                        correctPerson = shuffleArray(pool).find(p => !quizPersons.includes(p.navn));
+                        if (!correctPerson) continue;
+                        const allPositions = [...new Set(personDatabase.map(p => p.position))];
+                        const wrongOptions = getUniqueWrongOptions(allPositions, correctPerson.position, 3);
+                        questionData = { question: `Hvilken position/stilling har ${correctPerson.navn}?`, correct: correctPerson.position, rationale: `${correctPerson.navn} er korrekt ${correctPerson.position}.`, wrong: wrongOptions.map(pos => ({ text: pos, rationale: `${correctPerson.navn} er ${correctPerson.position}, ikke ${pos}.` })) };
+                        break;
+                    }
+                    case questionTypes.PERSON_NAVN_TIL_NAT: {
+                        const pool = [...availablePlayers, ...availableStab];
+                        correctPerson = shuffleArray(pool).find(p => !quizPersons.includes(p.navn));
+                        if (!correctPerson) continue;
+                        const allNats = [...new Set(personDatabase.map(p => p.nationalitet))];
+                        const wrongOptions = getUniqueWrongOptions(allNats, correctPerson.nationalitet, 3);
+                        questionData = { question: `Hvor kommer ${correctPerson.navn} fra?`, correct: correctPerson.nationalitet, rationale: `${correctPerson.navn} er korrekt fra ${correctPerson.nationalitet}.`, wrong: wrongOptions.map(nat => ({ text: nat, rationale: `${correctPerson.navn} er fra ${correctPerson.nationalitet}.` })) };
+                        break;
+                    }
+                    case questionTypes.PERSON_NAVN_TIL_AAR: {
+                        const pool = [...availablePlayers, ...availableStab].filter(p => p.fødselsdato);
+                        correctPerson = shuffleArray(pool).find(p => !quizPersons.includes(p.navn));
+                        if (!correctPerson) continue;
+                        const year = correctPerson.fødselsdato.substring(0, 4);
+                        questionData = { question: `Hvilket år er ${correctPerson.navn} født?`, correct: year, rationale: `${correctPerson.navn} er korrekt født i ${year}.` };
+                        if (!isTextInput) {
+                            const allYears = [...new Set(personDatabase.filter(p => p.fødselsdato).map(p => p.fødselsdato.substring(0, 4)))];
+                            questionData.wrong = getUniqueWrongOptions(allYears, year, 3).map(y => ({ text: y, rationale: `${correctPerson.navn} er født i ${year}.` }));
+                        }
+                        break;
+                    }
+                    case questionTypes.STAB_POS_TIL_NAVN: {
+                        correctPerson = shuffleArray(availableStab).find(p => !quizPersons.includes(p.navn));
+                        if (!correctPerson) continue;
+                        const position = correctPerson.position;
+                        const peopleWithThisPosition = stabDatabase.filter(s => s.position === position).length;
+                        const isUniquePosition = (peopleWithThisPosition === 1);
+                        const questionText = isUniquePosition ? `Hvem har stillingen: ${position}?` : `Hvilken af følgende personer er ${position}?`;
+                        const wrongPeople = personDatabase.filter(p => p.position !== position && p.navn !== correctPerson.navn);
+                        const wrongOptions = getUniqueWrongOptions(wrongPeople.map(p => p.navn), correctPerson.navn, 3);
+                        questionData = { question: questionText, correct: correctPerson.navn, rationale: `${correctPerson.navn} er korrekt ${position}.`, wrong: wrongOptions.map(navn => ({ text: navn, rationale: `${navn} er ${personDatabase.find(s=>s.navn === navn).position}.` })) };
+                        break;
+                    }
+                    case questionTypes.TÆL_NATIONALITET: {
+                        const natCounts = {};
+                        spillerDatabase.forEach(p => { natCounts[p.nationalitet] = (natCounts[p.nationalitet] || 0) + 1; });
+                        const popularNats = Object.keys(natCounts).filter(nat => natCounts[nat] > 1);
+                        if (popularNats.length === 0) continue;
+                        const natToCount = shuffleArray(popularNats)[0];
+                        const correctCount = natCounts[natToCount];
+                        questionData = { question: `Hvor mange spillere fra ${natToCount} er der i A-truppen?`, correct: correctCount.toString(), rationale: `Der er korrekt ${correctCount} spillere fra ${natToCount}.` };
+                        if (!isTextInput) {
+                            let wrongCounts = new Set([correctCount + 1, Math.max(1, correctCount - 1), correctCount + 2]);
+                            while(wrongCounts.size < 3) wrongCounts.add(Math.max(1, correctCount + Math.floor(Math.random() * 3) - 1));
+                            wrongCounts.delete(correctCount);
+                            questionData.wrong = Array.from(wrongCounts).slice(0,3).map(c => ({ text: c.toString(), rationale: `Det korrekte antal er ${correctCount}.` }));
+                        }
+                        break;
+                    }
                 }
 
                 if (questionData && correctPerson) {
                     if (isTextInput) {
-                        newQuestions.push({ questionNumber: newQuestions.length + 1, question: questionData.question, isTextInput: true, correctAnswer: questionData.correct, rationale: questionData.rationale, questionType });
+                        newQuestions.push({ 
+                            questionNumber: newQuestions.length + 1, 
+                            question: questionData.question, 
+                            isTextInput: true, 
+                            correctAnswer: questionData.correct, 
+                            rationale: questionData.rationale, 
+                            questionType, 
+                            fullName: correctPerson.navn 
+                        });
                     } else {
                         const answerOptions = [{ text: questionData.correct, rationale: questionData.rationale, isCorrect: true }];
                         questionData.wrong.forEach(opt => answerOptions.push({ text: opt.text, rationale: opt.rationale, isCorrect: false }));
                         shuffleArray(answerOptions);
-                        newQuestions.push({ questionNumber: newQuestions.length + 1, question: questionData.question, answerOptions, isTextInput: false });
+                        newQuestions.push({ 
+                            questionNumber: newQuestions.length + 1, 
+                            question: questionData.question, 
+                            answerOptions, 
+                            isTextInput: false 
+                        });
                     }
                     quizPersons.push(correctPerson.navn);
                     sessionUsedPersons.push(correctPerson);
@@ -282,7 +370,7 @@
 
         // === KERNELOGIK ===
         function startQuizLogic() {
-            if (!playerName) return;
+            playerName = nameInput.value.trim() || 'FCK Fan';
             startScreen.classList.add('hidden');
             quizContainer.classList.remove('hidden');
             resultsArea.classList.add('hidden');
@@ -291,21 +379,11 @@
             score = 0;
             questions = [...quizData.questions];
             if (questions.length === 0) {
-                console.error("Fejl: Ingen spørgsmål genereret.");
+                alert("Ingen spørgsmål – starter forfra!");
                 goBackToStart();
                 return;
             }
             loadQuestion();
-        }
-
-        function initializeQuiz(difficulty) {
-            playerName = nameInput.value.trim();
-            if (!playerName) {
-                alert("Indtast venligst dit navn for at starte.");
-                return;
-            }
-            currentDifficulty = difficulty;
-            generateRandomQuiz(difficulty);
         }
 
         function stopTimer() {
@@ -316,26 +394,16 @@
             timerDisplay.classList.add('hidden');
         }
 
-        // === RETTET startTimer – NU 100% STABIL ===
         function startTimer() {
-            if (timerInterval) {
-                clearInterval(timerInterval);
-                timerInterval = null;
-            }
+            if (timerInterval) clearInterval(timerInterval);
             timeLeft = TIMER_DURATION;
             timerDisplay.textContent = timeLeft;
-            timerDisplay.classList.remove('hidden');
-            timerDisplay.classList.remove('text-red-600');
-
+            timerDisplay.classList.remove('hidden', 'text-red-600');
             timerInterval = setInterval(() => {
                 timeLeft--;
                 timerDisplay.textContent = timeLeft;
-                if (timeLeft <= 5) {
-                    timerDisplay.classList.add('text-red-600');
-                }
-                if (timeLeft <= 0) {
-                    handleTimeUp();
-                }
+                if (timeLeft <= 5) timerDisplay.classList.add('text-red-600');
+                if (timeLeft <= 0) handleTimeUp();
             }, 1000);
         }
 
@@ -347,13 +415,10 @@
             answerOptionsEl.querySelectorAll('button').forEach(b => b.disabled = true);
             feedbackTextEl.textContent = 'Tiden løb ud!';
             feedbackTextEl.style.color = '#dc3545';
-            const currentQuestion = questions[currentQuestionIndex];
-            let rationale = currentQuestion.isTextInput 
-                ? `Det korrekte svar er <strong>${currentQuestion.correctAnswer}</strong>. ${currentQuestion.rationale}`
-                : currentQuestion.answerOptions.find(opt => opt.isCorrect).rationale;
-
+            const q = questions[currentQuestionIndex];
+            const rationale = q.isTextInput ? `Korrekt: <strong>${q.correctAnswer}</strong>. ${q.rationale}` : q.answerOptions.find(o => o.isCorrect).rationale;
             rationaleTextEl.innerHTML = rationale;
-            feedbackQuestionTextEl.innerHTML = currentQuestion.question;
+            feedbackQuestionTextEl.innerHTML = q.question;
             inlineFeedbackArea.classList.remove('hidden');
             inlineNextButton.classList.remove('hidden');
         }
@@ -361,11 +426,8 @@
         function loadNextOrShowResults() {
             stopTimer();
             currentQuestionIndex++;
-            if (currentQuestionIndex < questions.length) {
-                loadQuestion();
-            } else {
-                showResults();
-            }
+            if (currentQuestionIndex < questions.length) loadQuestion();
+            else showResults();
         }
 
         function loadQuestion() {
@@ -376,11 +438,11 @@
             resultsArea.classList.add('hidden');
             stopTimer();
 
-            const currentQuestion = questions[currentQuestionIndex];
+            const q = questions[currentQuestionIndex];
             questionNumberEl.textContent = `Spørgsmål ${currentQuestionIndex + 1} af ${questions.length}`;
-            questionTextEl.innerHTML = currentQuestion.question;
+            questionTextEl.innerHTML = q.question;
 
-            if (currentQuestion.isTextInput) {
+            if (q.isTextInput) {
                 answerOptionsEl.innerHTML = '';
                 answerOptionsEl.classList.add('hidden');
                 textInputArea.classList.remove('hidden');
@@ -392,39 +454,36 @@
                 textInputArea.classList.add('hidden');
                 answerOptionsEl.classList.remove('hidden');
                 answerOptionsEl.innerHTML = '';
-                currentQuestion.answerOptions.forEach(option => {
-                    const button = document.createElement('button');
-                    button.innerHTML = option.text;
-                    button.classList.add('w-full', 'px-4', 'py-3', 'bg-gray-200', 'rounded-md', 'hover:bg-gray-300', 'transition', 'duration-200', 'text-left');
-                    button.dataset.correct = option.isCorrect;
-                    button.dataset.rationale = option.rationale;
-                    button.onclick = handleAnswer;
-                    answerOptionsEl.appendChild(button);
+                q.answerOptions.forEach(opt => {
+                    const btn = document.createElement('button');
+                    btn.innerHTML = opt.text;
+                    btn.classList.add('w-full', 'px-4', 'py-3', 'bg-gray-200', 'rounded-md', 'hover:bg-gray-300', 'transition', 'duration-200', 'text-left');
+                    btn.dataset.correct = opt.isCorrect;
+                    btn.dataset.rationale = opt.rationale;
+                    btn.onclick = handleAnswer;
+                    answerOptionsEl.appendChild(btn);
                 });
             }
 
-            if (currentDifficulty === 'hard') {
-                startTimer();
-            }
+            if (currentDifficulty === 'hard') startTimer();
         }
 
-        function handleAnswer(event) {
+        function handleAnswer(e) {
             if (quizInProgress) return;
             quizInProgress = true;
             stopTimer();
-            const selectedButton = event.target.closest('button');
-            const isCorrect = selectedButton.dataset.correct === 'true';
-            const rationale = selectedButton.dataset.rationale;
-            const buttons = answerOptionsEl.querySelectorAll('button');
-            buttons.forEach(button => {
-                button.disabled = true;
-                if (button.dataset.correct === 'true') button.classList.add('correct');
-                else if (button === selectedButton) button.classList.add('incorrect');
+            const btn = e.target.closest('button');
+            const isCorrect = btn.dataset.correct === 'true';
+            const rationale = btn.dataset.rationale;
+            answerOptionsEl.querySelectorAll('button').forEach(b => {
+                b.disabled = true;
+                if (b.dataset.correct === 'true') b.classList.add('correct');
+                else if (b === btn) b.classList.add('incorrect');
             });
 
             if (isCorrect) {
                 score++;
-                feedbackTextEl.innerHTML = 'Korrekt! Correct';
+                feedbackTextEl.innerHTML = 'Korrekt!';
                 feedbackTextEl.style.color = '#28a745';
                 setTimeout(loadNextOrShowResults, 3000);
             } else {
@@ -443,14 +502,14 @@
             stopTimer();
             textAnswerInput.disabled = true;
             submitTextAnswer.disabled = true;
-            const currentQuestion = questions[currentQuestionIndex];
-            const givenAnswer = textAnswerInput.value.trim();
-            const correctAnswer = currentQuestion.correctAnswer;
-            const isCorrect = givenAnswer.toLowerCase() === correctAnswer.toLowerCase();
+            const q = questions[currentQuestionIndex];
+            const given = textAnswerInput.value.trim();
+            const isNameQuestion = q.fullName !== undefined;
+            const isCorrect = isNameQuestion ? isCorrectName(given, q.fullName) : given.toLowerCase() === q.correctAnswer.toLowerCase();
 
             if (isCorrect) {
                 score++;
-                feedbackTextEl.innerHTML = 'Korrekt! Correct';
+                feedbackTextEl.innerHTML = 'Korrekt!';
                 feedbackTextEl.style.color = '#28a745';
                 setTimeout(loadNextOrShowResults, 3000);
             } else {
@@ -458,8 +517,8 @@
                 feedbackTextEl.style.color = '#dc3545';
                 inlineNextButton.classList.remove('hidden');
             }
-            feedbackQuestionTextEl.innerHTML = currentQuestion.question;
-            rationaleTextEl.innerHTML = isCorrect ? currentQuestion.rationale : `Det korrekte svar er <strong>${correctAnswer}</strong>. ${currentQuestion.rationale}`;
+            feedbackQuestionTextEl.innerHTML = q.question;
+            rationaleTextEl.innerHTML = isCorrect ? q.rationale : `Korrekt: <strong>${q.correctAnswer}</strong>. ${q.rationale}`;
             inlineFeedbackArea.classList.remove('hidden');
         }
 
@@ -469,51 +528,37 @@
             questionArea.classList.add('hidden');
             resultsArea.classList.remove('hidden');
             playerNameEl.textContent = playerName;
-
             continueToNextLevelButton.classList.add('hidden');
+
             if (questions.length === 0) {
-                scoreEl.textContent = "Der opstod en fejl (0 spørgsmål).";
-                restartSameQuizButton.classList.add('hidden');
+                scoreEl.textContent = "Fejl: Ingen spørgsmål.";
             } else {
                 scoreEl.textContent = `Du fik ${score} ud af ${questions.length} rigtige!`;
                 restartSameQuizButton.classList.toggle('hidden', score === questions.length);
             }
 
             const percentage = questions.length > 0 ? (score / questions.length) * 100 : 0;
-            let message = '';
-
-            if (percentage === 100) {
-                message = 'Perfekt score!';
-            } else if (percentage >= 70) {
-                const mangler = questions.length - score;
-                message = currentDifficulty === 'easy' || currentDifficulty === 'normal'
-                    ? `Flot! Du mangler kun ${mangler} rigtige for at låse op.`
-                    : 'Flot resultat!';
-            } else if (percentage >= 40) {
-                message = 'Godt forsøgt! Lidt mere træning.';
-            } else {
-                message = 'Øv! Det kræver mere øvelse.';
-            }
+            let message = percentage === 100 ? 'Perfekt score!' :
+                         percentage >= 70 ? 'Flot! Du er tæt på næste niveau.' :
+                         percentage >= 40 ? 'Godt forsøgt!' : 'Øv! Prøv igen.';
 
             if (percentage === 100 && questions.length > 0) {
                 if (currentDifficulty === 'easy' && startNormalButton.disabled) {
                     startNormalButton.disabled = false;
                     startNormalButton.classList.remove('opacity-60', 'cursor-not-allowed');
-                    startNormalButton.querySelector('.text-xl').innerHTML = "Normal Correct";
-                    message += " <strong>'Normal' er låst op!</strong>";
-                    continueToNextLevelButton.innerHTML = "Start 'Normal' Nu";
+                    startNormalButton.querySelector('.text-xl').innerHTML = "Normal";
+                    message += " <strong>'Normal' låst op!</strong>";
+                    continueToNextLevelButton.innerHTML = "Start 'Normal'";
                     continueToNextLevelButton.dataset.nextLevel = "normal";
                     continueToNextLevelButton.classList.remove('hidden');
                 } else if (currentDifficulty === 'normal' && startHardButton.disabled) {
                     startHardButton.disabled = false;
                     startHardButton.classList.remove('opacity-60', 'cursor-not-allowed');
-                    startHardButton.querySelector('.text-xl').innerHTML = "Ekspert Correct";
-                    message += " <strong>Du er klar til 'Ekspert'!</strong>";
-                    continueToNextLevelButton.innerHTML = "Prøv 'Ekspert' Nu";
+                    startHardButton.querySelector('.text-xl').innerHTML = "Ekspert";
+                    message += " <strong>'Ekspert' låst op!</strong>";
+                    continueToNextLevelButton.innerHTML = "Start 'Ekspert'";
                     continueToNextLevelButton.dataset.nextLevel = "hard";
                     continueToNextLevelButton.classList.remove('hidden');
-                } else if (currentDifficulty === 'hard') {
-                    message += " <strong>Du er en ægte FCK-kender!</strong>";
                 }
             }
 
@@ -522,10 +567,8 @@
         }
 
         function sendEmail() {
-            const recipient = "tonnysenior@gmail.com";
-            const subject = `FCK Quiz Resultat for ${playerName}`;
-            const body = `Hej,\nHer er resultatet for ${playerName} i "${quizTitleEl.textContent}":\nScore: ${score} ud af ${questions.length}\n\n${finalMessageEl.textContent}\n\nMvh\nQuizzen`;
-            window.location.href = `mailto:${recipient}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+            const body = `Hej,\nHer er resultatet for ${playerName} i "${quizTitleEl.textContent}":\nScore: ${score} ud af ${questions.length}\n\n${finalMessageEl.textContent}\n\nMvh\nFCK Quiz`;
+            window.location.href = `mailto:tonnysenior@gmail.com?subject=FCK Quiz Resultat&body=${encodeURIComponent(body)}`;
         }
 
         function goBackToStart() {
@@ -537,11 +580,7 @@
         }
 
         function startQuizFromMenu(difficulty) {
-            playerName = nameInput.value.trim();
-            if (!playerName) {
-                alert("Indtast dit navn.");
-                return;
-            }
+            playerName = nameInput.value.trim() || 'FCK Fan';
             currentDifficulty = difficulty;
             sessionUsedPersons = [];
             generateRandomQuiz(difficulty);

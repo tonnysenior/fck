@@ -148,7 +148,8 @@
                 <button id="restart-new-quiz-button" class="quiz-button w-full md:w-auto px-6 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition">Ny Quiz (Resterende Pulje)</button>
             </div>
             <button id="email-button" class="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition mt-4 w-full">Send Resultat via E-mail</button>
-            <button id="back-to-start-button" class="px-6 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition mt-2 w-full">Tilbage til Start</button>
+            
+            <button id="back-to-menu-button" class="px-6 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition mt-2 w-full">Hovedmenu</button>
         </div>
     </div>
 
@@ -234,7 +235,8 @@
         const finalMessageEl = document.getElementById('final-message');
         const playerNameEl = document.getElementById('player-name');
         const emailButton = document.getElementById('email-button');
-        const backToStartButton = document.getElementById('back-to-start-button');
+        // ### ÆNDRING HER ### (Variabelnavn)
+        const backToMenuButton = document.getElementById('back-to-menu-button');
         const restartSameQuizButton = document.getElementById('restart-same-quiz-button');
         const restartNewQuizButton = document.getElementById('restart-new-quiz-button');
         const textInputArea = document.getElementById('text-input-area');
@@ -350,7 +352,7 @@
                 startNormalButton.querySelector('.text-xs').innerHTML = "Klar 'Let' med 100%";
             }
             
-            if (unlocked.includes('hard')) { // 'hard' og 'straffespark' låses op samtidigt
+            if (unlocked.includes('hard')) { 
                 startHardButton.disabled = false;
                 startHardButton.classList.remove('opacity-60', 'cursor-not-allowed');
                 startHardButton.querySelector('.text-xl').innerHTML = "Ekspert ✔️";
@@ -414,12 +416,10 @@
 
         // === QUIZ GENERATOR ===
         
-        // ÆNDRING: Tilføjet REL_ER_POSITION
         const questionTypes = { SPILLER_NR_TIL_NAVN: 0, SPILLER_NAVN_TIL_NR: 1, PERSON_NAVN_TIL_POS: 2, PERSON_NAVN_TIL_NAT: 3, PERSON_NAVN_TIL_AAR: 4, STAB_POS_TIL_NAVN: 5, TÆL_NATIONALITET: 6, REL_YNGSTE: 7, REL_IKKE_SKANDINAVIEN: 8, REL_IKKE_POSITION: 9, REL_ER_POSITION: 10 };
         
         const difficultySettings = {
             easy: [ questionTypes.SPILLER_NR_TIL_NAVN, questionTypes.SPILLER_NAVN_TIL_NR, questionTypes.PERSON_NAVN_TIL_POS, questionTypes.PERSON_NAVN_TIL_NAT ],
-            // ÆNDRING: Tilføjet REL_ER_POSITION
             normal: [ questionTypes.SPILLER_NR_TIL_NAVN, questionTypes.SPILLER_NAVN_TIL_NR, questionTypes.PERSON_NAVN_TIL_POS, questionTypes.PERSON_NAVN_TIL_NAT, questionTypes.STAB_POS_TIL_NAVN, questionTypes.REL_YNGSTE, questionTypes.REL_IKKE_POSITION, questionTypes.REL_ER_POSITION ],
             hard: [ questionTypes.SPILLER_NR_TIL_NAVN, questionTypes.SPILLER_NAVN_TIL_NR, questionTypes.PERSON_NAVN_TIL_POS, questionTypes.PERSON_NAVN_TIL_NAT, questionTypes.PERSON_NAVN_TIL_AAR, questionTypes.STAB_POS_TIL_NAVN, questionTypes.TÆL_NATIONALITET, questionTypes.REL_YNGSTE, questionTypes.REL_IKKE_SKANDINAVIEN, questionTypes.REL_IKKE_POSITION, questionTypes.REL_ER_POSITION ],
             bonus: [ questionTypes.SPILLER_NR_TIL_NAVN, questionTypes.PERSON_NAVN_TIL_POS, questionTypes.PERSON_NAVN_TIL_NAT ]
@@ -482,7 +482,6 @@
                 if (difficulty !== 'easy' && questionType === questionTypes.STAB_POS_TIL_NAVN && availableStab.length === 0) { 
                     questionType = questionTypes.PERSON_NAVN_TIL_POS; 
                 }
-                // ÆNDRING: Tjekker nu også for REL_ER_POSITION
                 if ([questionTypes.REL_YNGSTE, questionTypes.REL_IKKE_SKANDINAVIEN, questionTypes.REL_IKKE_POSITION, questionTypes.REL_ER_POSITION].includes(questionType) && availablePlayers.length < 4) {
                     continue; 
                 }
@@ -631,7 +630,6 @@
                         };
                         break;
                     }
-                    // ÆNDRING: NY SPØRGSMÅLSTYPE
                     case questionTypes.REL_ER_POSITION: {
                         const positions = ["Forsvar", "Midtbane", "Angreb"];
                         const pos = positions[Math.floor(Math.random() * positions.length)];
@@ -969,9 +967,6 @@
             inlineFeedbackArea.classList.remove('hidden');
         }
 
-        /**
-         * ÆNDRING: Oplåsningskrav er 100% (Let), 90% (Normal), 80% (Ekspert).
-         */
         function showResults() {
             quizInProgress = false; 
             stopTimer();
@@ -1104,7 +1099,7 @@
                 } else if (currentDifficulty === 'normal') {
                     if (percentage >= 90) { // <-- KRAV: 90%
                         if (!progress.unlocks.includes('hard')) {
-                            newUnlock = 'hard'; // 'hard' og 'straffespark' låses op sammen
+                            newUnlock = 'hard'; 
                             unlockMessage = ` <strong>Suverænt! ${percentage.toFixed(0)}%! 'Ekspert' og 'Straffespark' er låst op.</strong>`;
                         }
                         startHardButton.disabled = false;
@@ -1122,11 +1117,13 @@
 
                 } else if (currentDifficulty === 'hard') {
                     if (percentage >= 80) { // <-- KRAV: 80% for at bestå 'Ekspert'
-                        unlockMessage = " <strong>Imponerende! Du er en ægte FCK-kender.</strong>";
-                        // ÆNDRING: Knappen til Straffespark vises
-                        continueToNextLevelButton.innerHTML = "Prøv 'Straffespark' Nu ⚡";
-                        continueToNextLevelButton.dataset.nextLevel = "straffespark";
-                        continueToNextLevelButton.classList.remove('hidden');
+                        if (progress.unlocks.includes('straffespark')) {
+                            unlockMessage = " <strong>Imponerende! Du er en ægte FCK-kender.</strong>";
+                            // ÆNDRING: Knappen til Straffespark vises
+                            continueToNextLevelButton.innerHTML = "Prøv 'Straffespark' Nu ⚡";
+                            continueToNextLevelButton.dataset.nextLevel = "straffespark";
+                            continueToNextLevelButton.classList.remove('hidden');
+                        }
                     }
                 }
                 
@@ -1163,7 +1160,8 @@
         startStraffesparkButton.addEventListener('click', () => startQuizFromMenu('straffespark')); 
         
         inlineNextButton.addEventListener('click', loadNextOrShowResults);
-        backToStartButton.addEventListener('click', goBackToStart);
+        // ### ÆNDRING HER ### (Variabelnavn)
+        backToMenuButton.addEventListener('click', goBackToStart);
         restartSameQuizButton.addEventListener('click', restartSameQuiz);
         
         // .onclick sættes i showResults()

@@ -197,7 +197,7 @@
         let currentQuestionIndex = 0;
         let score = 0;
         let questions = [];
-        let playerName = 'FCK Fan'; // DEFAULT NAVN
+        let playerName = 'FCK Fan'; 
         let quizData = { questions: [] };
         let sessionUsedPersons = []; 
         let currentDifficulty = 'normal';
@@ -218,7 +218,6 @@
         const startEasyButton = document.getElementById('start-easy-quiz');
         const startNormalButton = document.getElementById('start-normal-quiz');
         const startHardButton = document.getElementById('start-hard-quiz');
-        // ÆNDRING: Variabelnavn opdateret
         const startStraffesparkButton = document.getElementById('start-straffespark-quiz'); 
         const quizTitleEl = document.getElementById('quiz-title');
         const questionArea = document.getElementById('question-area');
@@ -252,7 +251,6 @@
         const easyHighscoreEl = document.getElementById('easy-highscore-display');
         const normalHighscoreEl = document.getElementById('normal-highscore-display');
         const hardHighscoreEl = document.getElementById('hard-highscore-display');
-        // ÆNDRING: Variabelnavn opdateret
         const straffesparkHighscoreEl = document.getElementById('straffespark-highscore-display');
         const highscoreResultEl = document.getElementById('highscore-result-display');
 
@@ -296,14 +294,13 @@
         
         // === HIGH SCORE FUNKTIONER ===
         
-        // ÆNDRING: Opdateret til 'straffespark'
         function getHighScores() {
             const scores = localStorage.getItem(HIGH_SCORE_KEY);
             const defaultScores = {
                 easy: { score: 0, total: 10, name: '-' },
                 normal: { score: 0, total: 10, name: '-' },
                 hard: { score: 0, total: 10, name: '-' },
-                straffespark: { score: 0, total: 0, name: '-' } // 'total' bruges ikke her
+                straffespark: { score: 0, total: 0, name: '-' } 
             };
             try {
                 return scores ? { ...defaultScores, ...JSON.parse(scores) } : defaultScores;
@@ -314,7 +311,6 @@
         function saveHighScores(scores) {
             localStorage.setItem(HIGH_SCORE_KEY, JSON.stringify(scores));
         }
-        // ÆNDRING: Opdateret til 'straffespark'
         function updateHighScoreDisplay() {
             const highScores = getHighScores();
             easyHighscoreEl.textContent = `Rekord: ${highScores.easy.score} / ${highScores.easy.total} (${highScores.easy.name})`;
@@ -337,7 +333,6 @@
             localStorage.setItem(QUIZ_PROGRESS_KEY, JSON.stringify(progress));
         }
 
-        // ÆNDRING: Opdateret til 'straffespark' og 90%
         function updateUnlockUI(unlocks) {
             const unlocked = unlocks || ['easy']; 
 
@@ -419,12 +414,14 @@
 
         // === QUIZ GENERATOR ===
         
-        const questionTypes = { SPILLER_NR_TIL_NAVN: 0, SPILLER_NAVN_TIL_NR: 1, PERSON_NAVN_TIL_POS: 2, PERSON_NAVN_TIL_NAT: 3, PERSON_NAVN_TIL_AAR: 4, STAB_POS_TIL_NAVN: 5, TÆL_NATIONALITET: 6, REL_YNGSTE: 7, REL_IKKE_SKANDINAVIEN: 8, REL_IKKE_POSITION: 9 };
+        // ÆNDRING: Tilføjet REL_ER_POSITION
+        const questionTypes = { SPILLER_NR_TIL_NAVN: 0, SPILLER_NAVN_TIL_NR: 1, PERSON_NAVN_TIL_POS: 2, PERSON_NAVN_TIL_NAT: 3, PERSON_NAVN_TIL_AAR: 4, STAB_POS_TIL_NAVN: 5, TÆL_NATIONALITET: 6, REL_YNGSTE: 7, REL_IKKE_SKANDINAVIEN: 8, REL_IKKE_POSITION: 9, REL_ER_POSITION: 10 };
         
         const difficultySettings = {
             easy: [ questionTypes.SPILLER_NR_TIL_NAVN, questionTypes.SPILLER_NAVN_TIL_NR, questionTypes.PERSON_NAVN_TIL_POS, questionTypes.PERSON_NAVN_TIL_NAT ],
-            normal: [ questionTypes.SPILLER_NR_TIL_NAVN, questionTypes.SPILLER_NAVN_TIL_NR, questionTypes.PERSON_NAVN_TIL_POS, questionTypes.PERSON_NAVN_TIL_NAT, questionTypes.STAB_POS_TIL_NAVN, questionTypes.REL_YNGSTE, questionTypes.REL_IKKE_POSITION ],
-            hard: [ questionTypes.SPILLER_NR_TIL_NAVN, questionTypes.SPILLER_NAVN_TIL_NR, questionTypes.PERSON_NAVN_TIL_POS, questionTypes.PERSON_NAVN_TIL_NAT, questionTypes.PERSON_NAVN_TIL_AAR, questionTypes.STAB_POS_TIL_NAVN, questionTypes.TÆL_NATIONALITET, questionTypes.REL_YNGSTE, questionTypes.REL_IKKE_SKANDINAVIEN, questionTypes.REL_IKKE_POSITION ],
+            // ÆNDRING: Tilføjet REL_ER_POSITION
+            normal: [ questionTypes.SPILLER_NR_TIL_NAVN, questionTypes.SPILLER_NAVN_TIL_NR, questionTypes.PERSON_NAVN_TIL_POS, questionTypes.PERSON_NAVN_TIL_NAT, questionTypes.STAB_POS_TIL_NAVN, questionTypes.REL_YNGSTE, questionTypes.REL_IKKE_POSITION, questionTypes.REL_ER_POSITION ],
+            hard: [ questionTypes.SPILLER_NR_TIL_NAVN, questionTypes.SPILLER_NAVN_TIL_NR, questionTypes.PERSON_NAVN_TIL_POS, questionTypes.PERSON_NAVN_TIL_NAT, questionTypes.PERSON_NAVN_TIL_AAR, questionTypes.STAB_POS_TIL_NAVN, questionTypes.TÆL_NATIONALITET, questionTypes.REL_YNGSTE, questionTypes.REL_IKKE_SKANDINAVIEN, questionTypes.REL_IKKE_POSITION, questionTypes.REL_ER_POSITION ],
             bonus: [ questionTypes.SPILLER_NR_TIL_NAVN, questionTypes.PERSON_NAVN_TIL_POS, questionTypes.PERSON_NAVN_TIL_NAT ]
         };
 
@@ -441,7 +438,6 @@
         }
 
         function generateRandomQuiz(difficulty) {
-            // ÆNDRING: 'straffespark' bruger 'hard' settings
             const setting = (difficulty === 'straffespark') ? 'hard' : difficulty;
             const allowedTypes = difficultySettings[setting];
 
@@ -465,7 +461,6 @@
                 totalAvailable = (difficulty === 'easy') ? availablePlayers.length : availablePlayers.length + availableStab.length;
             }
 
-            // ÆNDRING: 'straffespark' genererer 50 spørgsmål
             const numQuestions = (difficulty === 'straffespark') ? 50 : (difficulty === 'bonus') ? 3 : Math.min(10, totalAvailable);
             
             const newQuestions = [];
@@ -478,7 +473,6 @@
                 let questionData = null;
                 let questionType = allowedTypes[Math.floor(Math.random() * allowedTypes.length)];
                 
-                // ÆNDRING: 'straffespark' er text input
                 const isTextInput = (difficulty === 'hard' || difficulty === 'straffespark') && 
                                      [questionTypes.SPILLER_NR_TIL_NAVN, questionTypes.SPILLER_NAVN_TIL_NR, questionTypes.PERSON_NAVN_TIL_AAR, questionTypes.TÆL_NATIONALITET].includes(questionType);
 
@@ -488,7 +482,8 @@
                 if (difficulty !== 'easy' && questionType === questionTypes.STAB_POS_TIL_NAVN && availableStab.length === 0) { 
                     questionType = questionTypes.PERSON_NAVN_TIL_POS; 
                 }
-                if ([questionTypes.REL_YNGSTE, questionTypes.REL_IKKE_SKANDINAVIEN, questionTypes.REL_IKKE_POSITION].includes(questionType) && availablePlayers.length < 4) {
+                // ÆNDRING: Tjekker nu også for REL_ER_POSITION
+                if ([questionTypes.REL_YNGSTE, questionTypes.REL_IKKE_SKANDINAVIEN, questionTypes.REL_IKKE_POSITION, questionTypes.REL_ER_POSITION].includes(questionType) && availablePlayers.length < 4) {
                     continue; 
                 }
 
@@ -636,6 +631,26 @@
                         };
                         break;
                     }
+                    // ÆNDRING: NY SPØRGSMÅLSTYPE
+                    case questionTypes.REL_ER_POSITION: {
+                        const positions = ["Forsvar", "Midtbane", "Angreb"];
+                        const pos = positions[Math.floor(Math.random() * positions.length)];
+                        const poolCorrect = availablePlayers.filter(p => p.position === pos);
+                        const poolWrong = availablePlayers.filter(p => p.position !== pos);
+                        
+                        if (poolCorrect.length < 1 || poolWrong.length < 3) continue; 
+
+                        correctPerson = getMultipleUniquePersons(1, poolCorrect)[0];
+                        const wrongPeople = getMultipleUniquePersons(3, poolWrong);
+                        
+                        questionData = {
+                            question: `Hvem af disse ER ${pos}spiller?`,
+                            correct: correctPerson.navn,
+                            rationale: `${correctPerson.navn} er korrekt ${correctPerson.position}.`,
+                            wrong: wrongPeople.map(p => ({ text: p.navn, rationale: `${p.navn} er ${p.position}, ikke ${pos}spiller.` }))
+                        };
+                        break;
+                    }
                 }
                 
                 if (questionData && (correctPerson || questionData.correct)) {
@@ -751,7 +766,6 @@
             submitTextAnswer.disabled = true;
             answerOptionsEl.querySelectorAll('button').forEach(b => b.disabled = true);
             
-            // ÆNDRING: 'straffespark'
             if (currentDifficulty === 'straffespark') {
                 feedbackTextEl.textContent = 'Tiden løb ud! Spillet er slut.';
                 feedbackTextEl.style.color = '#dc3545';
@@ -832,7 +846,6 @@
             }
             const currentQuestion = questions[currentQuestionIndex];
             
-            // ÆNDRING: 'straffespark'
             if (currentDifficulty === 'straffespark') {
                  questionNumberEl.textContent = `Straffespark ${currentQuestionIndex + 1} (Rekord: ${getHighScores().straffespark.score})`;
             } else {
@@ -899,7 +912,6 @@
                 const delay = (currentDifficulty === 'straffespark') ? 1500 : 3000;
                 setTimeout(loadNextOrShowResults, delay);
             } else {
-                // ÆNDRING: 'straffespark'
                 if (currentDifficulty === 'straffespark') {
                     feedbackTextEl.textContent = 'Forkert! Spillet er slut.';
                     feedbackTextEl.style.color = '#dc3545';
@@ -942,7 +954,6 @@
                 setTimeout(loadNextOrShowResults, delay);
             } else {
                 rationale = `Det korrekte svar er <strong>${currentQuestion.correctAnswer}</strong>. ${currentQuestion.rationale}`;
-                // ÆNDRING: 'straffespark'
                 if (currentDifficulty === 'straffespark') {
                     feedbackTextEl.textContent = 'Forkert! Spillet er slut.';
                     feedbackTextEl.style.color = '#dc3545';
@@ -959,7 +970,7 @@
         }
 
         /**
-         * ÆNDRING: Oplåsningskrav er 100% (Let) og 90% (Normal).
+         * ÆNDRING: Oplåsningskrav er 100% (Let), 90% (Normal), 80% (Ekspert).
          */
         function showResults() {
             quizInProgress = false; 
@@ -997,7 +1008,6 @@
             let unlockMessage = '';
             let highScoreMessage = '';
 
-            // ÆNDRING: 'straffespark'
             if (currentDifficulty === 'straffespark') {
                 scoreEl.textContent = `Du fik ${score} rigtige i træk!`;
                 restartSameQuizButton.classList.add('hidden'); 
@@ -1087,7 +1097,7 @@
                         continueToNextLevelButton.innerHTML = "Start 'Normal' Nu";
                         continueToNextLevelButton.dataset.nextLevel = "normal";
                         continueToNextLevelButton.classList.remove('hidden');
-                    } else if (percentage >= 80) { // Viser "næsten" besked
+                    } else if (percentage >= 80) { 
                         unlockMessage = " <strong>Godt klaret! Du skal have 100% for at låse op.</strong>";
                     }
 
@@ -1106,7 +1116,7 @@
                         continueToNextLevelButton.innerHTML = "Prøv 'Ekspert' Nu (15s. timer)";
                         continueToNextLevelButton.dataset.nextLevel = "hard";
                         continueToNextLevelButton.classList.remove('hidden');
-                    } else if (percentage >= 80) { // Viser "næsten" besked
+                    } else if (percentage >= 80) { 
                         unlockMessage = " <strong>Stærkt! Du skal have 90% for at låse op.</strong>";
                     }
 
@@ -1137,7 +1147,6 @@
         function sendEmail() {
             const recipient = "tonnysenior@gmail.com";
             const subject = `FCK Quiz Resultat for ${playerName}`;
-            // ÆNDRING: 'straffespark'
             let scoreText = (currentDifficulty === 'straffespark') ? `Score: ${score} rigtige i træk` : `Score: ${score} ud af ${questions.length}`;
             
             const body = `Hej,\n\Her er resultatet for ${playerName} i quizzen "${quizTitleEl.textContent}":\n\n${scoreText}\n\n${finalMessageEl.textContent}\n\nMvh\nQuizzen`;
@@ -1151,14 +1160,13 @@
         startEasyButton.addEventListener('click', () => startQuizFromMenu('easy'));
         startNormalButton.addEventListener('click', () => startQuizFromMenu('normal'));
         startHardButton.addEventListener('click', () => startQuizFromMenu('hard'));
-        // ÆNDRING: 'straffespark'
         startStraffesparkButton.addEventListener('click', () => startQuizFromMenu('straffespark')); 
         
         inlineNextButton.addEventListener('click', loadNextOrShowResults);
         backToStartButton.addEventListener('click', goBackToStart);
         restartSameQuizButton.addEventListener('click', restartSameQuiz);
         
-        // Denne .onclick sættes nu i showResults()
+        // .onclick sættes i showResults()
         
         continueToNextLevelButton.addEventListener('click', () => {
             const nextDifficulty = continueToNextLevelButton.dataset.nextLevel;
